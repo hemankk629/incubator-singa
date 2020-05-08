@@ -38,12 +38,12 @@ void RMSProp::Apply(int epoch, float lr, const string& name, Tensor& grad,
 
   if (history_gradient_.find(name) == history_gradient_.end()) {
     history_gradient_[name].ResetLike(value);
-    history_gradient_[name].SetValue(0.0f);
+    history_gradient_[name].SetValue(const_float_zero);
   }
   Tensor& history = history_gradient_[name];
   history *= rho_;
   Tensor tmp = Square(grad);
-  Axpy(1 - rho_, tmp, &history);
+  Axpy(const_float_one - rho_, tmp, &history);
   Sqrt(history + delta_, &tmp);
   Div(grad, tmp, &tmp);
   Axpy(-lr, tmp, &value);

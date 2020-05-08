@@ -17,4 +17,6 @@
 # limitations under the License.
 # 
 
-../../build/bin/alexnet -epoch 140
+# ../../build/bin/alexnet -epoch 140
+export LD_LIBRARY_PATH=../../../build/lib
+./cnn

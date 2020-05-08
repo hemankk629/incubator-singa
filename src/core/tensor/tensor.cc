@@ -708,7 +708,7 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
 
 // =============Element-wise operations====================================
 float Tensor::l1() const {
-  float nrm = 0.0f;
+  float nrm = const_float_zero;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec(
         [&nrm, this](Context *ctx) {
@@ -726,7 +726,7 @@ float Tensor::L1() const { return l1(); }
 
 /// L2 norm, Do not use Nrm2 (name conflict).
 float Tensor::l2() const {
-  float nrm = 0.0f;
+  float nrm = const_float_zero;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec(
         [&nrm, this](Context *ctx) {
@@ -1044,9 +1044,9 @@ Tensor Average(const Tensor &M, int axis) {
   //    ....
   // }
   if (axis == 0) {
-    return Sum(M, 0) / (1.0f * M.shape(0));
+    return Sum(M, 0) / (const_float_one * M.shape(0));
   } else if (axis == 1) {
-    return Sum(M, 1) / (1.0f * M.shape(1));
+    return Sum(M, 1) / (const_float_one * M.shape(1));
   } else {
     LOG(FATAL) << "Not currently support Sum over axis = " << axis;
   }
@@ -1054,9 +1054,9 @@ Tensor Average(const Tensor &M, int axis) {
 // TODO(wangwei) conside async exec
 template <>
 float Sum<float>(const Tensor &in) {
-  float s = 0.0f;
+  float s = const_float_zero;
   Tensor one(in.shape(), in.device(), in.data_type());
-  one.SetValue(1.0f);
+  one.SetValue(const_float_one);
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     one.device()->Exec(
         // cannot use this sum function in computational graph
@@ -1086,7 +1086,7 @@ Tensor Sum(const Tensor &M, int axis) {
 Tensor SumAll(const Tensor &in) {
   Tensor out({(size_t)1}, in.device(), in.data_type());
   Tensor one(in.shape(), in.device(), in.data_type());
-  one.SetValue(1.0f);
+  one.SetValue(const_float_one);
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
     one.device()->Exec(
         [in, one, out](Context *ctx) mutable {
@@ -1127,7 +1127,7 @@ void AddColumn(const SType alpha, const SType beta, const Tensor &v,
     CHECK_EQ(nb_row, v.Size());
 
     Tensor one(Shape{1, nb_col}, M->device(), M->data_type());
-    one.SetValue(1.0f);  // TODO(wangwei) cast type
+    one.SetValue(const_float_one);  // TODO(wangwei) cast type
     Tensor vmat(Reshape(v, Shape{nb_row, 1}));
     Mult(alpha, vmat, one, beta, M);
   }
@@ -1150,7 +1150,7 @@ void AddRow(const SType alpha, const SType beta, const Tensor &v, Tensor *M) {
     CHECK_EQ(nb_col, v.Size());
 
     Tensor one(Shape{nb_row, 1}, M->device(), M->data_type());
-    one.SetValue(1.0f);
+    one.SetValue(const_float_one);
     Tensor vmat(Reshape(v, Shape{1, nb_col}));
     Mult(alpha, one, vmat, beta, M);
   }
@@ -1360,7 +1360,7 @@ void SumColumns(const Tensor &M, Tensor *v) {
     CHECK_EQ(nb_row, v->Size());
 
     Tensor one(Shape{nb_col}, M.device(), M.data_type());
-    one.SetValue(1.0f);  // TODO(wangwei) cast type
+    one.SetValue(const_float_one);  // TODO(wangwei) cast type
     Mult(M, one, v);
   }
 }
@@ -1375,7 +1375,7 @@ void SumRows(const Tensor &M, Tensor *v) {
     CHECK_EQ(nb_col, v->Size());
 
     Tensor one(Shape{nb_row}, M.device(), M.data_type());
-    one.SetValue(1.0f);  // TODO(wangwei) cast type
+    one.SetValue(const_float_one);  // TODO(wangwei) cast type
     Tensor X = Transpose(M);
     Mult(X, one, v);
   }
@@ -1463,7 +1463,7 @@ Tensor Mult(const Tensor &A, const Tensor &B) {
 }
 
 void Mult(const Tensor &A, const Tensor &B, Tensor *out) {
-  Mult(1.0f, A, B, 0.0f, out);
+  Mult(const_float_one, A, B, const_float_zero, out);
 }
 
 template <typename SType>

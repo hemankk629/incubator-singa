@@ -41,14 +41,14 @@ void Nesterov::Apply(int epoch, float lr, const string& name, Tensor& grad,
     float mom = momentum_generator_(step);
     if (history_gradient_.find(name) == history_gradient_.end()) {
       history_gradient_[name].ResetLike(value);
-      history_gradient_[name].SetValue(0.0f);
+      history_gradient_[name].SetValue(const_float_zero);
     }
     Tensor& history = history_gradient_[name];
     Tensor tmp = history.Clone();
     history *= mom;
     Axpy(lr, grad, &history);
-    tmp *= -mom;
-    Axpy(1 + mom, history, &tmp);
+    tmp *= const_float_minus_one * mom;
+    Axpy(const_float_one + mom, history, &tmp);
     value -= tmp;
   }
 }

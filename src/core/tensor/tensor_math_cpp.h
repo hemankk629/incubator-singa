@@ -32,8 +32,11 @@
 #include "singa/core/tensor.h"
 
 #ifdef USE_CBLAS
-#include <cblas.h>
+#undef USE_CBLAS
+// #include <cblas.h>
 #endif
+
+#include "kernels.h"
 
 namespace singa {
 
@@ -346,7 +349,7 @@ template <>
 void Div<float, lang::Cpp>(const float x, const Tensor &in, Tensor *out,
                            Context *ctx) {
   auto const_div = [&x](float a) {
-    CHECK_NE(a, 0.f);
+    CHECK_NE(a, const_float_zero);
     return x / a;
   };
   traverse_unary<float>(in, out, const_div);
@@ -356,7 +359,7 @@ template <>
 void Div<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
                            Context *ctx) {
   auto binary_div = [](float a, float b) {
-    CHECK_NE(b, 0.f);
+    CHECK_NE(b, const_float_zero);
     return a / b;
   };
   traverse_binary<float>(in1, in2, out, binary_div);
@@ -379,7 +382,7 @@ void EltwiseMult<float, lang::Cpp>(const Tensor &in1, const Tensor &in2,
 template <>
 void ReLUBackward<float, lang::Cpp>(const Tensor &in1, const Tensor &in2,
                                     Tensor *out, Context *ctx) {
-  auto relubackward_lambda = [](float a, float b) { return (b > 0) ? a : 0.f; };
+  auto relubackward_lambda = [](float a, float b) { return (b > const_float_zero) ? a : const_float_zero; };
   traverse_binary<float>(in1, in2, out, relubackward_lambda);
 }
 
@@ -391,49 +394,49 @@ void Exp<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 template <>
 void GE<float, lang::Cpp>(const Tensor &in, const float x, Tensor *out,
                           Context *ctx) {
-  auto ge_lambda = [&x](float a) { return (a >= x) ? 1.f : 0.f; };
+  auto ge_lambda = [&x](float a) { return (a >= x) ? const_float_one : const_float_zero; };
   traverse_unary<float>(in, out, ge_lambda);
 }
 
 template <>
 void GE<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
                           Context *ctx) {
-  auto ge_lambda_binary = [](float a, float b) { return (a >= b) ? 1.f : 0.f; };
+  auto ge_lambda_binary = [](float a, float b) { return (a >= b) ? const_float_one : const_float_zero; };
   traverse_binary<float>(in1, in2, out, ge_lambda_binary);
 }
 
 template <>
 void GT<float, lang::Cpp>(const Tensor &in, const float x, Tensor *out,
                           Context *ctx) {
-  auto gt_lambda = [&x](float a) { return (a > x) ? 1.f : 0.f; };
+  auto gt_lambda = [&x](float a) { return (a > x) ? const_float_one : const_float_zero; };
   traverse_unary<float>(in, out, gt_lambda);
 }
 
 template <>
 void GT<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
                           Context *ctx) {
-  auto gt_lambda_binary = [](float a, float b) { return (a > b) ? 1.f : 0.f; };
+  auto gt_lambda_binary = [](float a, float b) { return (a > b) ? const_float_one : const_float_zero; };
   traverse_binary<float>(in1, in2, out, gt_lambda_binary);
 }
 
 template <>
 void LE<float, lang::Cpp>(const Tensor &in, const float x, Tensor *out,
                           Context *ctx) {
-  auto le_lambda = [&x](float a) { return (a <= x) ? 1.f : 0.f; };
+  auto le_lambda = [&x](float a) { return (a <= x) ? const_float_one : const_float_zero; };
   traverse_unary<float>(in, out, le_lambda);
 }
 
 template <>
 void LE<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
                           Context *ctx) {
-  auto le_lambda_binary = [](float a, float b) { return (a <= b) ? 1.f : 0.f; };
+  auto le_lambda_binary = [](float a, float b) { return (a <= b) ? const_float_one : const_float_zero; };
   traverse_binary<float>(in1, in2, out, le_lambda_binary);
 }
 
 template <>
 void Log<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   auto ulog = [](float a) {
-    CHECK_GT(a, 0.f);
+    CHECK_GT(a, const_float_zero);
     return log(a);
   };
   traverse_unary<float>(in, out, ulog);
@@ -442,14 +445,14 @@ void Log<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 template <>
 void LT<float, lang::Cpp>(const Tensor &in, const float x, Tensor *out,
                           Context *ctx) {
-  auto lt_lambda = [&x](float a) { return (a < x) ? 1.f : 0.f; };
+  auto lt_lambda = [&x](float a) { return (a < x) ? const_float_one : const_float_zero; };
   traverse_unary<float>(in, out, lt_lambda);
 }
 
 template <>
 void LT<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
                           Context *ctx) {
-  auto lt_lambda_binary = [](float a, float b) { return (a < b) ? 1.f : 0.f; };
+  auto lt_lambda_binary = [](float a, float b) { return (a < b) ? const_float_one : const_float_zero; };
   traverse_binary<float>(in1, in2, out, lt_lambda_binary);
 }
 
@@ -468,7 +471,7 @@ void Pow<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
 
 template <>
 void ReLU<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
-  auto relu_lambda = [](float a) { return (a >= 0.f) ? a : 0.f; };
+  auto relu_lambda = [](float a) { return (a >= const_float_zero) ? a : const_float_zero; };
   traverse_unary<float>(in, out, relu_lambda);
 }
 
@@ -486,32 +489,32 @@ void Set<int, lang::Cpp>(const int x, Tensor *out, Context *ctx) {
 
 template <>
 void Sigmoid<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
-  auto sigmoid_lambda = [](float a) { return 1.f / (1.f + exp(-a)); };
+  auto sigmoid_lambda = [](float a) { return const_float_one / (const_float_one + exp(-a)); };
   traverse_unary<float>(in, out, sigmoid_lambda);
 }
 
 template <>
 void Sign<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
-  auto sign_lambda = [](float a) { return (a > 0) - (a < 0); };
+  auto sign_lambda = [](float a) { return (a > const_float_zero) - (a < const_float_zero); };
   traverse_unary<float>(in, out, sign_lambda);
 }
 
 template <>
 void SoftPlus<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
-  auto softplus_lambda = [](float a) { return log(1.f + exp(a)); };
+  auto softplus_lambda = [](float a) { return log(const_float_one + exp(a)); };
   traverse_unary<float>(in, out, softplus_lambda);
 }
 
 template <>
 void SoftSign<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
-  auto softsign_lambda = [](float a) { return a / (1.f + fabs(a)); };
+  auto softsign_lambda = [](float a) { return a / (const_float_one + fabs(a)); };
   traverse_unary<float>(in, out, softsign_lambda);
 }
 
 template <>
 void Sqrt<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
   auto usqrt = [](float a) {
-    CHECK_GE(a, 0.f);
+    CHECK_GE(a, const_float_zero);
     return sqrt(a);
   };
   traverse_unary<float>(in, out, usqrt);
@@ -529,7 +532,7 @@ void Sub<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
 // TODO(wangwei) optimize using omp
 template <>
 void Sum<float, lang::Cpp>(const Tensor &in, float *out, Context *ctx) {
-  float s = 0.f;
+  float s = const_float_zero;
   const float *inPtr = static_cast<const float *>(in.block()->data());
   for (size_t i = 0; i < in.Size(); i++) {
     s += inPtr[i];
@@ -568,7 +571,7 @@ void Bernoulli<float, lang::Cpp>(const float p, Tensor *out, Context *ctx) {
   std::bernoulli_distribution distribution(p);
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
   for (size_t i = 0; i < out->Size(); i++) {
-    outPtr[i] = distribution(ctx->random_generator) ? 1.0f : 0.0f;
+    outPtr[i] = distribution(ctx->random_generator) ? const_float_one : const_float_zero;
   }
 }
 
@@ -625,17 +628,26 @@ void DGMM<float, lang::Cpp>(const bool side_right, const Tensor &M,
   }
 }
 
-#ifdef USE_CBLAS
+// #ifdef USE_CBLAS
+#if 1
 template <>
 void Amax<float, lang::Cpp>(const Tensor &in, size_t *out, Context *ctx) {
   const float *inPtr = static_cast<const float *>(in.block()->data());
-  *out = cblas_isamax(in.Size(), inPtr, 1);  // not using strided traversal
+#ifdef USE_CBLAS
+  *out = cblas_isamax(in.Size(), inPtr, 1); // not using strided traversal
+#else
+  *out = my_cblas_isamax(in.Size(), inPtr, 1); // not using strided traversal
+#endif
 }
 
 template <>
 void Asum<float, lang::Cpp>(const Tensor &in, float *out, Context *ctx) {
   const float *inPtr = static_cast<const float *>(in.block()->data());
-  *out = cblas_sasum(in.Size(), inPtr, 1);  // not using strided traversal
+#ifdef USE_CBLAS
+  *out = cblas_sasum(in.Size(), inPtr, 1); // not using strided traversal
+#else
+  *out = my_cblas_sasum(in.Size(), inPtr, 1); // not using strided traversal
+#endif
 }
 
 // template <>
@@ -660,13 +672,21 @@ void Axpy<float, lang::Cpp>(const float alpha, const Tensor &in, Tensor *out,
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
 
   if (in.stride() == out->stride()) {
-    cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
+#ifdef USE_CBLAS
+	cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
+#else
+    my_cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
+#endif
   } else {
     // LOG(FATAL) << "Axpy, input and output strides do not match." ;
     Tensor t(in.shape(), in.device(), in.data_type());
     EltwiseMult<float, lang::Cpp>(in, alpha, &t, ctx);
     float *tPtr = static_cast<float *>(t.block()->mutable_data());
+#ifdef USE_CBLAS
     cblas_saxpy(in.Size(), 1, tPtr, 1, outPtr, 1);
+#else
+    my_cblas_saxpy(in.Size(), 1, tPtr, 1, outPtr, 1);
+#endif
   }
 }
 
@@ -692,7 +712,11 @@ void Dot<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, float *out,
   if (!(in1.transpose()) && !(in2.transpose())) {
     const float *in1Ptr = static_cast<const float *>(in1.block()->data());
     const float *in2Ptr = static_cast<const float *>(in2.block()->data());
+#ifdef USE_CBLAS
     *out = cblas_sdot(in1.Size(), in1Ptr, 1, in2Ptr, 1);
+#else
+    *out = my_cblas_sdot(in1.Size(), in1Ptr, 1, in2Ptr, 1);
+#endif
   } else {
     LOG(FATAL) << "Dot, one of the input is tranposed. Not implemented yet.";
   }
@@ -705,7 +729,11 @@ void Dot<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
     const float *in1Ptr = static_cast<const float *>(in1.block()->data());
     const float *in2Ptr = static_cast<const float *>(in2.block()->data());
     float *outPtr = static_cast<float *>(out->block()->mutable_data());
+#ifdef USE_CBLAS
     *outPtr = cblas_sdot(in1.Size(), in1Ptr, 1, in2Ptr, 1);
+#else
+    *outPtr = my_cblas_sdot(in1.Size(), in1Ptr, 1, in2Ptr, 1);
+#endif
   } else {
     LOG(FATAL) << "Dot, one of the input is tranposed. Not implemented yet.";
   }
@@ -714,13 +742,21 @@ void Dot<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, Tensor *out,
 template <>
 void Scale<float, lang::Cpp>(const float x, Tensor *out, Context *ctx) {
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
-  cblas_sscal(out->Size(), x, outPtr, 1);  // not using strided traversal
+#ifdef USE_CBLAS
+  cblas_sscal(out->Size(), x, outPtr, 1); // not using strided traversal
+#else
+  my_cblas_sscal(out->Size(), x, outPtr, 1); // not using strided traversal
+#endif
 }
 
 template <>
 void Nrm2<float, lang::Cpp>(const Tensor &in, float *out, Context *ctx) {
   const float *inPtr = static_cast<const float *>(in.block()->data());
-  *out = cblas_snrm2(in.Size(), inPtr, 1);  // not using strided traversal
+#ifdef USE_CBLAS
+  *out = cblas_snrm2(in.Size(), inPtr, 1); // not using strided traversal
+#else
+  *out = my_cblas_snrm2(in.Size(), inPtr, 1); // not using strided traversal
+#endif
 }
 
 template <>
@@ -732,11 +768,21 @@ void GEMV<float, lang::Cpp>(const float alpha, const Tensor &A, const Tensor &v,
   const size_t m = A.shape()[0];
   const size_t n = A.shape()[1];
   if (A.transpose()) {
+#ifdef USE_CBLAS
     cblas_sgemv(CblasRowMajor, CblasTrans, n, m, alpha, APtr, m, vPtr, 1, beta,
                 outPtr, 1);
+#else
+    my_cblas_sgemv(MyCblasRowMajor, MyCblasTrans, n, m, alpha, APtr, m, vPtr, 1, beta,
+                    outPtr, 1);
+#endif
   } else {
+#ifdef USE_CBLAS
     cblas_sgemv(CblasRowMajor, CblasNoTrans, m, n, alpha, APtr, n, vPtr, 1,
                 beta, outPtr, 1);
+#else
+    my_cblas_sgemv(MyCblasRowMajor, MyCblasNoTrans, m, n, alpha, APtr, n, vPtr, 1,
+                    beta, outPtr, 1);
+#endif
   }
 }
 
@@ -744,9 +790,9 @@ template <>
 void GEMM<float, lang::Cpp>(const float alpha, const Tensor &A, const Tensor &B,
                             const float beta, Tensor *C, Context *ctx) {
   auto transA = A.transpose();
-  auto transa = transA ? CblasTrans : CblasNoTrans;
+  auto transa = transA ? MyCblasTrans : MyCblasNoTrans;
   auto transB = B.transpose();
-  auto transb = transB ? CblasTrans : CblasNoTrans;
+  auto transb = transB ? MyCblasTrans : MyCblasNoTrans;
   const size_t nrowA = A.shape()[0];
   const size_t ncolA = A.shape()[1];
   const size_t ncolB = B.shape()[1];
@@ -756,8 +802,13 @@ void GEMM<float, lang::Cpp>(const float alpha, const Tensor &A, const Tensor &B,
   const float *APtr = static_cast<const float *>(A.block()->data());
   const float *BPtr = static_cast<const float *>(B.block()->data());
   float *CPtr = static_cast<float *>(C->block()->mutable_data());
+#ifdef USE_CBLAS
   cblas_sgemm(CblasRowMajor, transa, transb, nrowA, ncolB, ncolA, alpha, APtr,
               lda, BPtr, ldb, beta, CPtr, ldc);
+#else
+  my_cblas_sgemm(MyCblasRowMajor, transa, transb, nrowA, ncolB, ncolA, alpha, APtr,
+                lda, BPtr, ldb, beta, CPtr, ldc);
+#endif
 }
 
 /*
@@ -774,9 +825,18 @@ void GEMMBatched<float, lang::Cpp>(const float alpha, const Tensor &A,
   float *CPtr = static_cast<float *>(C->block()->mutable_data());
 
   auto transA = A.transpose();
+#ifdef USE_CBLAS
   auto transa = transA ? CblasTrans : CblasNoTrans;
+#else
+  auto transa = transA ? MyCblasTrans : MyCblasNoTrans;
+#endif
+
   auto transB = B.transpose();
+#ifdef USE_CBLAS
   auto transb = transB ? CblasTrans : CblasNoTrans;
+#else
+  auto transb = transB ? MyCblasTrans : MyCblasNoTrans;
+#endif
 
   const size_t ncolB = B.shape().end()[-1];
   const size_t nrowA = A.shape().end()[-2];
@@ -798,16 +858,22 @@ void GEMMBatched<float, lang::Cpp>(const float alpha, const Tensor &A,
   auto offset_C = 0;
 
   for (int i = 0; i < group_size; i++) {
+#ifdef USE_CBLAS
     cblas_sgemm(CblasRowMajor, transa, transb, nrowA, ncolB, ncolA, alpha,
                 APtr + offset_A, lda, BPtr + offset_B, ldb, beta,
                 CPtr + offset_C, ldc);
+#else
+    my_cblas_sgemm(MyCblasRowMajor, transa, transb, nrowA, ncolB, ncolA, alpha,
+                    APtr + offset_A, lda, BPtr + offset_B, ldb, beta,
+                    CPtr + offset_C, ldc);
+#endif
     offset_A += matrix_stride_A;
     offset_B += matrix_stride_B;
     offset_C += matrix_stride_C;
   }
 }
 
-#else
+#else	// USE_CBLAS
 
 template <>
 void Amax<float, lang::Cpp>(const Tensor &in, size_t *out, Context *ctx) {
@@ -828,7 +894,7 @@ void Amax<float, lang::Cpp>(const Tensor &in, size_t *out, Context *ctx) {
 template <>
 void Amin<float, lang::Cpp>(const Tensor &in, size_t *out, Context *ctx) {
   size_t minPos = 0;
-  float minVal = 0;
+  float minVal = const_float_zero;
   const float *inPtr = static_cast<const float *>(in.block()->data());
   for (size_t i = 0; i < in.Size(); i++) {  // not using strided traversal
     if (i == 0) {
@@ -843,7 +909,7 @@ void Amin<float, lang::Cpp>(const Tensor &in, size_t *out, Context *ctx) {
 
 template <>
 void Asum<float, lang::Cpp>(const Tensor &in, float *out, Context *ctx) {
-  float sum = 0;
+  float sum = const_float_zero;
   const float *inPtr = static_cast<const float *>(in.block()->data());
   for (size_t i = 0; i < in.Size(); i++) {
     sum += fabs(inPtr[i]);  // not using strided traversal
@@ -875,7 +941,7 @@ void Scale<float, lang::Cpp>(const float x, Tensor *out, Context *ctx) {
 template <>
 void Dot<float, lang::Cpp>(const Tensor &in1, const Tensor &in2, float *out,
                            Context *ctx) {
-  float sum = 0;
+  float sum = const_float_zero;
   // const float *in1Ptr = static_cast<const float *>(in1.data());
   // const float *in2Ptr = static_cast<const float *>(in2.data());
   // for (size_t i = 0; i < in.Size(); i++) {
@@ -907,7 +973,7 @@ void GEMV<float, lang::Cpp>(const float alpha, const Tensor &A, const Tensor &v,
   const size_t m = A.shape(0);
   const size_t n = A.shape(1);
   for (size_t r = 0; r < m; r++) {
-    float sum = 0;
+    float sum = const_float_zero;
     for (size_t c = 0; c < n; c++) {
       size_t idx = trans ? c * m + r : r * n + c;
       sum += APtr[idx] * vPtr[c];
@@ -935,11 +1001,11 @@ void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,
     }
   } else {
     for (size_t i = 0; i < batchsize; i++) {
-      float sum = 0.f;
+      float sum = const_float_zero;
       for (size_t j = 0; j < dim; j++) {
         sum += tPtr[i * dim + j];
       }
-      float loss_value = 0.f;
+      float loss_value = const_float_zero;
       for (size_t j = 0, offset = i * dim; j < dim; j++, offset++) {
         loss_value -=
             tPtr[offset] / sum * std::log((std::max)(pPtr[offset], FLT_MIN));
@@ -964,11 +1030,11 @@ void SoftmaxCrossEntropyBwd<float, lang::Cpp>(bool int_target,
     for (size_t i = 0; i < batchsize; i++) {
       int truth_idx = static_cast<int>(tPtr[i]);
       CHECK_GE(truth_idx, 0);
-      gradPtr[i * dim + truth_idx] -= 1.0;
+      gradPtr[i * dim + truth_idx] -= const_float_one;
     }
   } else {
     for (size_t i = 0; i < batchsize; i++) {
-      float sum = 0.f;
+      float sum = const_float_zero;
       for (size_t j = 0; j < dim; j++) {
         sum += tPtr[i * dim + j];
       }
@@ -990,7 +1056,7 @@ void RowMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 
   for (size_t r = 0; r < nrow; r++) {
     int counter_offset = (r * ncol);
-    float maxval = 0;
+    float maxval = const_float_zero;
     for (size_t c = 0; c < ncol; c++) {
       maxval = (std::max)(maxval, inPtr[traversal_info[in.shape().size()]]);
       traverse_next(in, shape_multipliers, traversal_info,
@@ -1001,11 +1067,10 @@ void RowMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context *ctx) {
 }
 
 // =========Matrix operations ================================================
-/*
+
 template <>
 void SoftMax<float, lang::Cpp>(const Tensor &in, Tensor *out, Context* ctx) {
-  CHECK_LE(in.nDim(), 2u) << "Axis is required for SoftMax on multi dimemsional
-tensor";
+  CHECK_LE(in.nDim(), 2u) << "Axis is required for SoftMax on multi dimemsional tensor";
   out->CopyData(in);
   size_t nrow = 1, ncol = in.Size(), size = ncol;
   if (in.nDim() == 2u) {
@@ -1021,7 +1086,7 @@ tensor";
   DivColumn(tmp, out);
   out->Reshape(in.shape());
 }
-
+/*
 template <>
 void AddCol<float, lang::Cpp>(const size_t nrow, const size_t ncol,
                               const Tensor& A, const Tensor& v, Tensor* out,
@@ -1072,7 +1137,7 @@ void Softmax<float, lang::Cpp>(const size_t nrow, const size_t ncol,
   float *bPtr = new float[ncol];
   for (size_t r = 0; r < nrow; r++) {
     size_t offset = r * ncol;
-    float denom = 0.f;
+    float denom = const_float_zero;
     for (size_t c = 0; c < ncol; c++) {
       bPtr[c] = exp(inPtr[offset + c]);
       denom += bPtr[c];
@@ -1091,7 +1156,7 @@ void SumColumns<float, lang::Cpp>(const size_t nrow, const size_t ncol,
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in.data());
   for (size_t c = 0; c < ncol; c++) {
-    outPtr[c] = 0.f;
+    outPtr[c] = const_float_zero;
   }
   for (size_t r = 0; r < nrow; r++) {
     size_t offset = r * ncol;
@@ -1108,7 +1173,7 @@ void SumRows<float, lang::Cpp>(const size_t nrow, const size_t ncol,
   const float *inPtr = static_cast<const float *>(in.data());
   for (size_t r = 0; r < nrow; r++) {
     size_t offset = r * ncol;
-    outPtr[r] = 0.f;
+    outPtr[r] = const_float_zero;
     for (size_t c = 0; c < ncol; c++) {
       outPtr[r] += inPtr[offset + c];
     }

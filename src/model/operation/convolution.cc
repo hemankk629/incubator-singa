@@ -590,7 +590,7 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
       [output, x, &W, &cch](Context *ctx) mutable {
         Block *inblock = x.block(), *outblock = output.block(),
               *wblock = W.block();
-        float alpha = 1.f, beta = 0.f;
+        float alpha = const_float_one, beta = const_float_zero;
         cudnnConvolutionForward(ctx->cudnn_handle, &alpha, cch.x_desc,
                                 inblock->data(), cch.filter_desc,
                                 wblock->data(), cch.conv_desc, cch.fp_alg,
@@ -604,7 +604,7 @@ Tensor GpuConvForward(const Tensor &x, const Tensor &W, const Tensor &b,
     Tensor outputFake(output);
     output.device()->Exec(
         [output, outputFake, &b, &cch](Context *ctx) mutable {
-          float beta = 1.f, alpha = 1.0f;
+          float beta = const_float_one, alpha = const_float_one;
           Block *outblock = output.block(), *bblock = b.block();
           cudnnAddTensor(ctx->cudnn_handle, &alpha, cch.bias_desc,
                          bblock->data(), &beta, cch.y_desc,
@@ -626,7 +626,7 @@ Tensor GpuConvBackwardx(const Tensor &dy, const Tensor &W, const Tensor &x,
   dy.device()->Exec(
       [dx, dy, &W, &cch](Context *ctx) mutable {
         Block *wblock = W.block(), *dyblock = dy.block(), *dxblock = dx.block();
-        float alpha = 1.f, beta = 0.f;
+        float alpha = const_float_one, beta = const_float_zero;
         cudnnConvolutionBackwardData(
             ctx->cudnn_handle, &alpha, cch.filter_desc, wblock->data(),
             cch.y_desc, dyblock->data(), cch.conv_desc, cch.bp_data_alg,
@@ -650,7 +650,7 @@ Tensor GpuConvBackwardW(const Tensor &dy, const Tensor &x, const Tensor &W,
       [dW, dy, x, &cch](Context *ctx) {
         Block *inblock = x.block(), *dyblock = dy.block(),
               *dwblock = dW.block();
-        float alpha = 1.f, beta = 0.f;
+        float alpha = const_float_one, beta = const_float_zero;
         cudnnConvolutionBackwardFilter(
             ctx->cudnn_handle, &alpha, cch.x_desc, inblock->data(), cch.y_desc,
             dyblock->data(), cch.conv_desc, cch.bp_filter_alg,
@@ -674,7 +674,7 @@ Tensor GpuConvBackwardb(const Tensor &dy, const Tensor &b,
   dy.device()->Exec(
       [dy, db, &cch](Context *ctx) mutable {
         Block *dyblock = dy.block(), *dbblock = db.block();
-        float alpha = 1.f, beta = 0.f;
+        float alpha = const_float_one, beta = const_float_zero;
         cudnnConvolutionBackwardBias(ctx->cudnn_handle, &alpha, cch.y_desc,
                                      dyblock->data(), &beta, cch.bias_desc,
                                      dbblock->mutable_data());
