@@ -49,7 +49,12 @@ namespace singa {
 
 extern float const_float_zero;
 extern float const_float_one;
+extern float const_float_two;
 extern float const_float_minus_one;
+extern float const_float_minus_two;
+extern float const_float_minus_one_half;
+extern float const_float_minus_zero_half;
+extern float const_float_small;
 
 void init_const_float();
 

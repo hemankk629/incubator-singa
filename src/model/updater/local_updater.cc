@@ -61,7 +61,7 @@ void LocalUpdater::Apply(int step, const string& name, Tensor& grad,
       param_buffer_[name].CopyData(value);
       sum_[name].ResetLike(param_buffer_[name]);
     }
-    sum_[name].SetValue(.0f);
+    sum_[name].SetValue(const_float_zero);
     for (int i = 0; i < total_num_; ++i)
       Add(sum_[name], grad_buffer_[std::make_pair(i, name)], &sum_[name]);
     Div(sum_[name], static_cast<float>(total_num_), &sum_[name]);

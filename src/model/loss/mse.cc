@@ -37,6 +37,6 @@ Tensor MSE::Forward(int flag, const Tensor& prediction, const Tensor& target) {
 Tensor MSE::Backward() {
   Tensor ret = buf_.top();
   buf_.pop();
-  return ret * (1.0f / ret.shape().at(0));
+  return ret * (const_float_one / ret.shape().at(0));
 }
 }  // namespace singa

@@ -124,7 +124,7 @@ void Div(const DType x, const Tensor &in, Tensor *out, Context *ctx) {
 /// out[i] = in[i] / x
 template <typename DType, typename Lang>
 void Div(const Tensor &in, const DType x, Tensor *out, Context *ctx) {
-  CHECK_NE(x, 0.f);
+  CHECK_NE(x, const_float_zero);
   EltwiseMult<DType, Lang>(in, DType(1) / x, out, ctx);
 }
 

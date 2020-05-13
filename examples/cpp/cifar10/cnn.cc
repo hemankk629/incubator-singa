@@ -254,7 +254,7 @@ void Eval(string data_dir) {
   Snapshot snap("mysnap", Snapshot::kRead, 100);
   vector<std::pair<std::string, Tensor>> params = snap.Read();
   net.SetParamValues(params);
-  float val = 0.f;
+  float val = const_float_zero;
   std::pair<Tensor, Tensor> ret = net.EvaluateOnBatchAccuracy(test_x, test_y, &val);
   LOG(INFO) << "Accuracy: " << val;
 }
