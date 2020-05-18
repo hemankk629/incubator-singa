@@ -40,3 +40,44 @@ Distributed deep learning system
 
 * [Development Mailing List](mailto:dev-subscribe@singa.incubator.apache.org) ([Archive](http://mail-archives.apache.org/mod_mbox/singa-dev/))
 * [Commits Mailing List](mailto:commits-subscribe@singa.incubator.apache.org) ([Archive](http://mail-archives.apache.org/mod_mbox/singa-commits/))
+
+## This Branch
+
+This branch contains the code to build fat executables to be run on a posit hardware.
+
+How to run the code on an x86/64 host:
+
+```
+cd tool/posit
+./copy-srcs.sh
+cd ../../build_posit
+make -j4
+```
+
+You should train the cnn cifar-10 model and obtain a snapshot:
+
+```
+cd examples/cifar10
+make
+./download_data.py bin
+./cnn
+```
+
+This should create two file ``mysnap.desc`` and ``mysnap.bin``.
+
+```
+cd build_posit
+cp ../examples/cifar10/mysnap.desc .
+cp ../examples/cifar10/mysnap.bin .
+cp -r cp ../examples/cifar10/cifar-10-batches-bin .
+./cnn
+```
+
+The result should be:
+
+```
+...
+Accuracy: 0.4774
+```
+
+TBD: how to compile and run on the posit hardware.
