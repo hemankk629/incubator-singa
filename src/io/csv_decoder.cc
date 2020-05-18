@@ -32,10 +32,10 @@ std::vector<Tensor> CSVDecoder::Decode(std::string value) {
   if (has_label_ == true)
     ss >> l;
   std::string str;
-  float d[kMaxCSVBufSize];
+  element_t d[kMaxCSVBufSize];
   int size = 0;
   while (std::getline(ss, str, ',')) {
-    float temp;
+    element_t temp;
     if (std::stringstream(str) >> temp) {
       CHECK_LE(size, kMaxCSVBufSize - 1);
       d[size++] = temp;

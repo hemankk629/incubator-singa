@@ -275,7 +275,7 @@ const std::vector<Tensor> GpuBatchNormForwardTraining(const CudnnBatchNormHandle
 
   output.device()->Exec(
   [&](Context * ctx) {
-    const float alpha = 1.0f, beta = 0.0f;
+    const float alpha = const_float_one, beta = const_float_zero;
     double epsilon = CUDNN_BN_MIN_EPSILON;
     CUDNN_CHECK(cudnnBatchNormalizationForwardTraining(
                   ctx->cudnn_handle, cbnh.mode, &alpha, &beta, cbnh.shape_desc,
@@ -312,7 +312,7 @@ Tensor GpuBatchNormForwardInference(const CudnnBatchNormHandle &cbnh,
   output.ResetLike(x);
   output.device()->Exec(
   [&](Context * ctx) {
-    const float alpha = 1.0f, beta = 0.0f;
+    const float alpha = const_float_one, beta = const_float_zero;
     double epsilon = CUDNN_BN_MIN_EPSILON;
     CUDNN_CHECK(cudnnBatchNormalizationForwardInference(
                   ctx->cudnn_handle, cbnh.mode, &alpha, &beta, cbnh.shape_desc,
@@ -346,7 +346,7 @@ const std::vector<Tensor> GpuBatchNormBackward(const CudnnBatchNormHandle &cbnh,
   dx.device()->Exec(
   [&](Context * ctx) {
 
-    const float alpha = 1.0f, beta = .0f;
+    const float alpha = const_float_one, beta = const_float_zero;
     double epsilon = CUDNN_BN_MIN_EPSILON;
     CUDNN_CHECK(cudnnBatchNormalizationBackward(
                   ctx->cudnn_handle, cbnh.mode, &alpha, &beta, &alpha, &beta,

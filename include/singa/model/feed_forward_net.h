@@ -105,6 +105,9 @@ class FeedForwardNet {
   /// Evaluate the neural net for one batch of data
   std::pair<Tensor, Tensor> EvaluateOnBatch(const Tensor& x, const Tensor& y);
 
+  std::pair<Tensor, Tensor> EvaluateOnBatchAccuracy(
+		  const Tensor& x, const Tensor& y, float* acc);
+
   /// Predict the probability distributation over candicate classes for each
   /// data sample. 'batchsize' is used for controlling the memory footprint.
   /// It should be smaller than the total number of samples.
@@ -149,6 +152,8 @@ class FeedForwardNet {
   const vector<string> GetParamNames() const;
   const vector<ParamSpec> GetParamSpecs() const;
   const vector<Tensor> GetParamValues() const;
+
+  const int SetParamValues(vector<std::pair<std::string, Tensor>>) const;
 
  protected:
   vector<std::shared_ptr<Layer>> layers_;

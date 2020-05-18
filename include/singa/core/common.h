@@ -43,9 +43,18 @@
 #include <mkldnn.hpp>
 #endif  // USE_MKLDNN
 
+typedef float element_t;
+// typedef int64_t element_t;
+
 using std::atomic;
 
 namespace singa {
+
+extern float const_float_zero;
+extern float const_float_one;
+extern float const_float_minus_one;
+
+void init_const_float();
 
 namespace lang {
 /// To implemente functions using cpp libraries
