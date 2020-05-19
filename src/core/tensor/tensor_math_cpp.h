@@ -30,8 +30,11 @@
 #include <iostream>
 
 #ifdef USE_CBLAS
-#include <cblas.h>
+#undef USE_CBLAS
+// #include <cblas.h>
 #endif
+
+#include "kernels.h"
 
 namespace singa {
 
@@ -254,14 +257,14 @@ void Clamp<float, lang::Cpp>(const float low, const float high,
 template <>
 void Div<float, lang::Cpp>(const float x, const Tensor& in, Tensor* out,
                            Context *ctx) {
-  auto const_div = [&x](float a) {CHECK_NE(a, 0.f); return x / a;};
+  auto const_div = [&x](float a) {CHECK_NE(a, const_float_zero); return x / a;};
   traverse_unary<float>(in, out, const_div);
 }
 
 template <>
 void Div<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
                            Tensor* out, Context *ctx) {
-  auto binary_div = [](float a, float b) {CHECK_NE(b, 0.f); return a / b;};
+  auto binary_div = [](float a, float b) {CHECK_NE(b, const_float_zero); return a / b;};
   traverse_binary<float>(in1, in2, out, binary_div);
 }
 
@@ -285,14 +288,14 @@ void EltwiseMult<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor*
 
 template <>
 void Exp<float, lang::Cpp>(const Tensor& in, Tensor *out, Context *ctx) {
-  traverse_unary<float>(in, out, [](float x) {return exp(x);});
+  traverse_unary<float>(in, out, [](float x) {return my_exp(x);});
 }
 
 template <>
 void GE<float, lang::Cpp>(const Tensor& in, const float x, Tensor* out,
                           Context *ctx) {
   auto ge_lambda = [&x](float a) {
-    return (a >= x) ? 1.f : 0.f;
+    return (a >= x) ? const_float_one : const_float_zero;
   };
   traverse_unary<float>(in, out, ge_lambda);
 }
@@ -301,7 +304,7 @@ template <>
 void GE<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
                           Context *ctx) {
   auto ge_lambda_binary = [](float a, float b) {
-    return (a >= b) ? 1.f : 0.f;
+    return (a >= b) ? const_float_one : const_float_zero;
   };
   traverse_binary<float>(in1, in2, out, ge_lambda_binary);
 }
@@ -310,7 +313,7 @@ template <>
 void GT<float, lang::Cpp>(const Tensor& in, const float x, Tensor* out,
                           Context *ctx) {
   auto gt_lambda = [&x](float a) {
-    return (a > x) ? 1.f : 0.f;
+    return (a > x) ? const_float_one : const_float_zero;
   };
   traverse_unary<float>(in, out, gt_lambda);
 }
@@ -319,7 +322,7 @@ template <>
 void GT<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
                           Context *ctx) {
   auto gt_lambda_binary = [](float a, float b) {
-    return (a > b) ? 1.f : 0.f;
+    return (a > b) ? const_float_one : const_float_zero;
   };
   traverse_binary<float>(in1, in2, out, gt_lambda_binary);
 }
@@ -328,7 +331,7 @@ template <>
 void LE<float, lang::Cpp>(const Tensor& in, const float x, Tensor* out,
                           Context *ctx) {
   auto le_lambda = [&x](float a) {
-    return (a <= x) ? 1.f : 0.f;
+    return (a <= x) ? const_float_one : const_float_zero;
   };
   traverse_unary<float>(in, out, le_lambda);
 }
@@ -337,7 +340,7 @@ template <>
 void LE<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
                           Context *ctx) {
   auto le_lambda_binary = [](float a, float b) {
-    return (a <= b) ? 1.f : 0.f;
+    return (a <= b) ? const_float_one : const_float_zero;
   };
   traverse_binary<float>(in1, in2, out, le_lambda_binary);
 }
@@ -345,7 +348,7 @@ void LE<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
 template <>
 void Log<float, lang::Cpp>(const Tensor& in, Tensor* out,
                            Context *ctx) {
-  auto ulog = [](float a) {CHECK_GT(a, 0.f); return log(a);};
+  auto ulog = [](float a) {CHECK_GT(a, const_float_zero); return log(a);};
   traverse_unary<float>(in, out, ulog);
 }
 
@@ -353,7 +356,7 @@ template <>
 void LT<float, lang::Cpp>(const Tensor& in, const float x, Tensor* out,
                           Context *ctx) {
   auto lt_lambda = [&x](float a) {
-    return (a < x) ? 1.f : 0.f;
+    return (a < x) ? const_float_one : const_float_zero;
   };
   traverse_unary<float>(in, out, lt_lambda);
 }
@@ -363,7 +366,7 @@ template <>
 void LT<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out,
                           Context *ctx) {
   auto lt_lambda_binary = [](float a, float b) {
-    return (a < b) ? 1.f : 0.f;
+    return (a < b) ? const_float_one : const_float_zero;
   };
   traverse_binary<float>(in1, in2, out, lt_lambda_binary);
 }
@@ -386,7 +389,7 @@ template <>
 void ReLU<float, lang::Cpp>(const Tensor& in, Tensor* out,
                             Context *ctx) {
   auto relu_lambda = [](float a) {
-    return (a >= 0.f) ? a : 0.f;
+    return (a >= const_float_zero) ? a : const_float_zero;
   };
   traverse_unary<float>(in, out, relu_lambda);
 }
@@ -409,7 +412,7 @@ template <>
 void Sigmoid<float, lang::Cpp>(const Tensor& in, Tensor* out,
                                Context *ctx) {
   auto sigmoid_lambda = [](float a) {
-    return 1.f / (1.f + exp(-a));
+    return const_float_one / (const_float_one + my_exp(-a));
   };
   traverse_unary<float>(in, out, sigmoid_lambda);
 }
@@ -426,7 +429,7 @@ void Sign<float, lang::Cpp>(const Tensor& in, Tensor* out,
 template <>
 void Sqrt<float, lang::Cpp>(const Tensor& in, Tensor* out,
                             Context *ctx) {
-  auto usqrt = [](float a) {CHECK_GE(a, 0.f); return sqrt(a);};
+  auto usqrt = [](float a) {CHECK_GE(a, const_float_zero); return my_sqrt(a);};
   traverse_unary<float>(in, out, usqrt);
 }
 
@@ -445,7 +448,7 @@ void Sub<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
 template <>
 void Sum<float, lang::Cpp>(const Tensor& in, float *out,
                            Context *ctx) {
-  float s = 0.f;
+  float s = const_float_zero;
   const float *inPtr = static_cast<const float *>(in.block()->data());
   for (size_t i = 0; i < in.Size(); i++) {
     s += inPtr[i];
@@ -475,7 +478,7 @@ void Bernoulli<float, lang::Cpp>(const float p, Tensor* out,
   std::bernoulli_distribution distribution(p);
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
   for (size_t i = 0; i < out->Size(); i++) {
-    outPtr[i] = distribution(ctx->random_generator) ? 1.0f : 0.0f;
+    outPtr[i] = distribution(ctx->random_generator) ? const_float_one : const_float_zero;
   }
 }
 
@@ -533,20 +536,28 @@ void DGMM<float, lang::Cpp>(const bool side_right,
   }
 }
 
-
-#ifdef USE_CBLAS
+// #ifdef USE_CBLAS
+#if 1
 template <>
 void Amax<float, lang::Cpp>(const Tensor& in, size_t *out,
                             Context *ctx) {
   const float *inPtr = static_cast<const float *>(in.block()->data());
+#ifdef USE_CBLAS
   *out = cblas_isamax(in.Size(), inPtr, 1); //not using strided traversal
+#else
+  *out = my_cblas_isamax(in.Size(), inPtr, 1); //not using strided traversal
+#endif
 }
 
 template <>
 void Asum<float, lang::Cpp>(const Tensor& in, float *out,
                             Context *ctx) {
   const float *inPtr = static_cast<const float *>(in.block()->data());
+#ifdef USE_CBLAS
   *out = cblas_sasum(in.Size(), inPtr, 1); //not using strided traversal
+#else
+  *out = my_cblas_sasum(in.Size(), inPtr, 1); //not using strided traversal
+#endif
 }
 
 // template <>
@@ -571,13 +582,21 @@ void Axpy<float, lang::Cpp>(const float alpha,
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
 
   if (in.stride() == out->stride()) {
-    cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
+#ifdef USE_CBLAS
+	cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
+#else
+    my_cblas_saxpy(in.Size(), alpha, inPtr, 1, outPtr, 1);
+#endif
   } else {
     //LOG(FATAL) << "Axpy, input and output strides do not match." ;
     Tensor t(in.shape(), in.device(), in.data_type());
     EltwiseMult<float, lang::Cpp>(in, alpha, &t, ctx);
     float* tPtr = static_cast<float*>(t.block()->mutable_data());
+#ifdef USE_CBLAS
     cblas_saxpy(in.Size(), 1, tPtr, 1, outPtr, 1);
+#else
+    my_cblas_saxpy(in.Size(), 1, tPtr, 1, outPtr, 1);
+#endif
   }
 }
 
@@ -603,7 +622,11 @@ void Dot<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
   if (!(in1.transpose()) && !(in2.transpose())) {
     const float *in1Ptr = static_cast<const float *>(in1.block()->data());
     const float *in2Ptr = static_cast<const float *>(in2.block()->data());
+#ifdef USE_CBLAS
     *out = cblas_sdot(in1.Size(), in1Ptr, 1, in2Ptr, 1);
+#else
+    *out = my_cblas_sdot(in1.Size(), in1Ptr, 1, in2Ptr, 1);
+#endif
   } else {
     LOG(FATAL) << "Dot, one of the input is tranposed. Not implemented yet." ;
   }
@@ -613,14 +636,22 @@ template <>
 void Scale<float, lang::Cpp>(const float x, Tensor *out,
                              Context *ctx) {
   float *outPtr = static_cast<float *>(out->block()->mutable_data());
+#ifdef USE_CBLAS
   cblas_sscal(out->Size(), x, outPtr, 1); //not using strided traversal
+#else
+  my_cblas_sscal(out->Size(), x, outPtr, 1); //not using strided traversal
+#endif
 }
 
 template <>
 void Nrm2<float, lang::Cpp>(const Tensor& in, float *out,
                             Context *ctx) {
   const float *inPtr = static_cast<const float *>(in.block()->data());
+#ifdef USE_CBLAS
   *out = cblas_snrm2(in.Size(), inPtr, 1); //not using strided traversal
+#else
+  *out = my_cblas_snrm2(in.Size(), inPtr, 1); //not using strided traversal
+#endif
 }
 
 template <>
@@ -632,11 +663,21 @@ void GEMV<float, lang::Cpp>(const float alpha, const Tensor& A, const Tensor& v,
   const size_t m = A.shape()[0];
   const size_t n = A.shape()[1];
   if (A.transpose()) {
+#ifdef USE_CBLAS
     cblas_sgemv(CblasRowMajor, CblasTrans, n, m, alpha, APtr, m, vPtr, 1, beta,
                 outPtr, 1);
+#else
+    my_cblas_sgemv(MyCblasRowMajor, MyCblasTrans, n, m, alpha, APtr, m, vPtr, 1, beta,
+                    outPtr, 1);
+#endif
   } else {
+#ifdef USE_CBLAS
     cblas_sgemv(CblasRowMajor, CblasNoTrans, m, n, alpha, APtr, n, vPtr, 1,
                 beta, outPtr, 1);
+#else
+    my_cblas_sgemv(MyCblasRowMajor, MyCblasNoTrans, m, n, alpha, APtr, n, vPtr, 1,
+                    beta, outPtr, 1);
+#endif
   }
 }
 
@@ -645,9 +686,9 @@ void GEMM<float, lang::Cpp>(const float alpha,
                             const Tensor& A, const Tensor& B, const float beta,
                             Tensor *C, Context *ctx) {
   auto transA = A.transpose();
-  auto transa = transA ? CblasTrans : CblasNoTrans;
+  auto transa = transA ? MyCblasTrans : MyCblasNoTrans;
   auto transB = B.transpose();
-  auto transb = transB ? CblasTrans : CblasNoTrans;
+  auto transb = transB ? MyCblasTrans : MyCblasNoTrans;
   const size_t nrowA = A.shape()[0];
   const size_t ncolA = A.shape()[1];
   const size_t ncolB = B.shape()[1];
@@ -657,38 +698,42 @@ void GEMM<float, lang::Cpp>(const float alpha,
   const float *APtr = static_cast<const float *>(A.block()->data());
   const float *BPtr = static_cast<const float *>(B.block()->data());
   float *CPtr = static_cast<float *>(C->block()->mutable_data());
+#ifdef USE_CBLAS
   cblas_sgemm(CblasRowMajor, transa, transb, nrowA, ncolB, ncolA, alpha, APtr,
               lda, BPtr, ldb, beta, CPtr, ldc);
+#else
+  my_cblas_sgemm(MyCblasRowMajor, transa, transb, nrowA, ncolB, ncolA, alpha, APtr,
+                lda, BPtr, ldb, beta, CPtr, ldc);
+#endif
 }
 
-#else
+#else	// USE_CBLAS
 
 template <>
 void Amax<float, lang::Cpp>(const Tensor& in, size_t *out,
                             Context *ctx) {
-  size_t maxPos = 0;
-  float maxVal = 0;
+
   const float *inPtr = static_cast<const float *>(in.block()->data());
-  for (size_t i = 0; i < in.Size(); i++) { //not using strided traversal
-    if (i == 0) {
-      maxVal = inPtr[i];
-    } else if (inPtr[i] > maxVal) {
+  float maxVal = inPtr[0];
+  size_t maxPos = 0;
+  for (size_t i = 1; i < in.Size(); i++) { //not using strided traversal
+	if (inPtr[i] > maxVal) {
       maxVal = inPtr[i];
       maxPos = i;
     }
   }
   *out = maxPos;
 }
+
 template <>
 void Amin<float, lang::Cpp>(const Tensor& in, size_t *out,
                             Context *ctx) {
-  size_t minPos = 0;
-  float minVal = 0;
+
   const float *inPtr = static_cast<const float *>(in.block()->data());
-  for (size_t i = 0; i < in.Size(); i++) { //not using strided traversal
-    if (i == 0) {
-      minVal = inPtr[i];
-    } else if (inPtr[i] > minVal) {
+  float minVal = inPtr[0];
+  size_t minPos = 0;
+  for (size_t i = 1; i < in.Size(); i++) { //not using strided traversal
+    if (inPtr[i] > minVal) {
       minVal = inPtr[i];
       minPos = i;
     }
@@ -699,10 +744,10 @@ void Amin<float, lang::Cpp>(const Tensor& in, size_t *out,
 template <>
 void Asum<float, lang::Cpp>(const Tensor& in, float *out,
                             Context *ctx) {
-  float sum = 0;
+  float sum = const_float_zero;
   const float *inPtr = static_cast<const float *>(in.block()->data());
   for (size_t i = 0; i < in.Size(); i++) {
-    sum += fabs(inPtr[i]); //not using strided traversal
+    sum += my_fabs(inPtr[i]); //not using strided traversal
   }
 }
 
@@ -732,7 +777,7 @@ void Scale<float, lang::Cpp>(const float x, Tensor *out,
 template <>
 void Dot<float, lang::Cpp>(const Tensor& in1, const Tensor& in2,
                            float *out, Context *ctx) {
-  float sum = 0;
+  float sum = const_float_zero;
   // const float *in1Ptr = static_cast<const float *>(in1.data());
   // const float *in2Ptr = static_cast<const float *>(in2.data());
   // for (size_t i = 0; i < in.Size(); i++) {
@@ -763,7 +808,7 @@ void GEMV<float, lang::Cpp>(const float alpha, const Tensor& A, const Tensor& v,
   const size_t m = A.shape(0);
   const size_t n = A.shape(1);
   for (size_t r = 0; r < m; r++) {
-    float sum = 0;
+    float sum = const_float_zero;
     for (size_t c = 0; c < n; c++) {
       size_t idx = trans ? c * m + r : r * n + c;
       sum += APtr[idx] * vPtr[c];
@@ -772,7 +817,42 @@ void GEMV<float, lang::Cpp>(const float alpha, const Tensor& A, const Tensor& v,
   }
 }
 
+template <>
+void GEMM<float, lang::Cpp>(const float alpha,
+                            const Tensor& A, const Tensor& B, const float beta,
+                            Tensor *C, Context *ctx) {
+  auto transA = A.transpose();
+  auto transB = B.transpose();
+  const size_t nrowA = A.shape()[0];
+  const size_t ncolA = A.shape()[1];
+  const size_t ncolB = B.shape()[1];
+  auto lda = transA ? nrowA : ncolA;
+  // auto sda = transA ? ncolA : nrowA;
+  auto ldb = transB ? ncolA : ncolB;
+  // auto sdb = transB ? ncolB : ncolA;
+  auto ldc = ldb;
+  auto sdc = transA ? ncolA : nrowA;
+  const float *APtr = static_cast<const float *>(A.block()->data());
+  const float *BPtr = static_cast<const float *>(B.block()->data());
+  float *CPtr = static_cast<float *>(C->block()->mutable_data());
+
+  for (size_t i = 0; i < sdc; i++)
+	  for (size_t j = 0; j < ldc; j++)
+		  CPtr[i * ldc + j] *= beta;
+  /*
+  for (size_t i = 0; i < lda; i++)
+	  for (size_t j = 0; j < ldb; j++) {
+		  float sum = const_float_zero;
+		  for (size_t k = 0; k < ldc; k++) {
+			  sum += APtr[i * lda + k] * BPtr[k * ldb + j];
+		  }
+		  CPtr[i * ldc + j] += alpha * sum;
+	  }
+	  */
+}
+
 #endif  // USE_CBLAS
+
 template <>
 void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,
     const size_t batchsize,
@@ -791,11 +871,11 @@ void ComputeCrossEntropy<float, lang::Cpp>(bool int_target,
     }
   } else {
     for (size_t i = 0; i < batchsize; i++) {
-      float sum = 0.f;
+      float sum = const_float_zero;
       for (size_t j = 0; j < dim; j++) {
         sum += tPtr[i * dim + j];
       }
-      float loss = 0.f;
+      float loss = const_float_zero;
       for (size_t j = 0, offset = i * dim; j < dim; j++, offset++) {
         loss -= tPtr[offset] / sum * std::log((std::max)(pPtr[offset], FLT_MIN));
       }
@@ -819,11 +899,11 @@ void SoftmaxCrossEntropyBwd<float, lang::Cpp>(bool int_target,
     for (size_t i = 0; i < batchsize; i++) {
       int truth_idx = static_cast<int>(tPtr[i]);
       CHECK_GE(truth_idx, 0);
-      gradPtr[i * dim + truth_idx] -= 1.0;
+      gradPtr[i * dim + truth_idx] -= const_float_one;
     }
   } else {
     for (size_t i = 0; i < batchsize; i++) {
-      float sum = 0.f;
+      float sum = const_float_zero;
       for (size_t j = 0; j < dim; j++) {
         sum += tPtr[i * dim + j];
       }
@@ -906,7 +986,7 @@ void Softmax<float, lang::Cpp>(const size_t nrow, const size_t ncol,
   float *bPtr = new float[ncol];
   for (size_t r = 0; r < nrow; r++) {
     size_t offset = r * ncol;
-    float denom = 0.f;
+    float denom = const_float_zero;
     for (size_t c = 0; c < ncol; c++) {
       bPtr[c] = exp(inPtr[offset + c]);
       denom += bPtr[c];
@@ -925,7 +1005,7 @@ void SumColumns<float, lang::Cpp>(const size_t nrow, const size_t ncol,
   float *outPtr = static_cast<float *>(out->mutable_data());
   const float *inPtr = static_cast<const float *>(in.data());
   for (size_t c = 0; c < ncol; c++) {
-    outPtr[c] = 0.f;
+    outPtr[c] = const_float_zero;
   }
   for (size_t r = 0; r < nrow; r++) {
     size_t offset = r * ncol;
@@ -942,7 +1022,7 @@ void SumRows<float, lang::Cpp>(const size_t nrow, const size_t ncol,
   const float *inPtr = static_cast<const float *>(in.data());
   for (size_t r = 0; r < nrow; r++) {
     size_t offset = r * ncol;
-    outPtr[r] = 0.f;
+    outPtr[r] = const_float_zero;
     for (size_t c = 0; c < ncol; c++) {
       outPtr[r] += inPtr[offset + c];
     }

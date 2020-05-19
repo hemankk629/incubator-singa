@@ -50,7 +50,7 @@ class Metric {
   /// Comptue the metric value averaged over all samples (in a batch)
   float Evaluate(const Tensor& prediction, const Tensor& target) {
     const Tensor metric = Forward(prediction, target);
-    return Sum<float>(metric) / (1.0f * metric.Size());
+    return Sum<float>(metric) / (const_float_one * metric.Size());
   }
 };
 /// Compute the accuray of the prediction, which is matched against the
