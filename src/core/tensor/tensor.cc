@@ -249,9 +249,12 @@ void Tensor::ToProto(singa::TensorProto *proto) const {
   switch (data_type_) {
   case kFloat32: {
     proto->clear_float_data();
-    const float *data_ptr = data<float>();
-    for (size_t i = 0; i < Product(shape_); ++i)
+    // const float *data_ptr = device_->block()->data<float>();
+    float* data_ptr = new float[Product(shape_)];
+    device_->CopyDataToHostPtr((void*)data_ptr, block(), Product(shape_) * sizeof(float));
+    for (size_t i = 0; i < Product(shape_); ++i)	    
       proto->add_float_data(data_ptr[i]);
+    delete data_ptr;
     break;
   }
   case kDouble: {

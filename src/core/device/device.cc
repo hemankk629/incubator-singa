@@ -32,7 +32,7 @@ void Device::Exec(function<void(Context*)>&& fn, const vector<Block*> read_block
 }
 
 // TODO(wangwei) get Block from the memory manager
-Block* Device::NewBlock(int size) {
+Block* Device::NewBlock(size_t size) {
   CHECK_GE(size, 0) << "size is negative, could be caused by the type cast "
     << "from size_t to int. In that case, the size is too large.";
   if (size > 0) {
@@ -72,5 +72,15 @@ void Device::CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
         direct](Context* ctx) { CopyToFrom(dstptr, src, nBytes, direct, ctx); },
        {}, {dst});
 }
+
+void Device::CopyDataToHostPtr(void* dst, Block* src, size_t nBytes,
+                                 size_t src_offset) {
+  auto direct = lang_ == kCpp ? kHostToHost : kDeviceToHost;
+  void* srcptr = reinterpret_cast<char*>(src->mutable_data()) + src_offset;
+  Exec([this, dst, srcptr, nBytes,
+        direct](Context* ctx) { CopyToFrom(dst, srcptr, nBytes, direct, ctx); },
+       {src}, {});
+}
+
 void Device::Sync() {}
 }  // namespace singa
