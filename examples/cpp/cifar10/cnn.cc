@@ -25,6 +25,7 @@
 #include "singa/model/metric.h"
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
+#include "singa/io/snapshot.h"
 namespace singa {
 // currently supports 'cudnn' and 'singacpp'
 #ifdef USE_CUDNN
@@ -189,6 +190,64 @@ void Train(int num_epoch, string data_dir) {
   test_y.ToDevice(dev);
 #endif  // USE_CUDNN
   net.Train(100, num_epoch, train_x, train_y, test_x, test_y);
+  test_y = net.Forward(kEval, test_x);
+
+  Snapshot snap("mysnap", Snapshot::kWrite, 100);
+  vector<string> names = net.GetParamNames();
+  vector<Tensor> params = net.GetParamValues();
+  vector<string>::iterator namesIter;
+  vector<Tensor>::iterator paramsIter;
+  int idx = 0;
+  for (paramsIter = params.begin(), namesIter = names.begin();
+		  paramsIter != params.end() && namesIter != names.end();
+		  paramsIter++, namesIter++) {
+	  LOG(INFO) << "Param: " << *namesIter;
+	  snap.Write(*namesIter, *paramsIter);
+	  idx++;
+  }
+}
+
+void Eval(string data_dir) {
+  Cifar10 data(data_dir);
+  Tensor test_x, test_y;
+  {
+    auto test = data.ReadTestData();
+    size_t nsamples = test.first.shape(0);
+    auto mtest =
+        Reshape(test.first, Shape{nsamples, test.first.Size() / nsamples});
+    const Tensor& mean = Average(mtest, 0);
+    SubRow(mean, &mtest);
+    test_x = Reshape(mtest, test.first.shape());
+    test_y = test.second;
+  }
+  CHECK_EQ(test_x.shape(0), test_y.shape(0));
+  LOG(INFO) << "Test samples = " << test_y.shape(0);
+  auto net = CreateNet();
+  SGD sgd;
+  OptimizerConf opt_conf;
+  opt_conf.set_momentum(0.9);
+  auto reg = opt_conf.mutable_regularizer();
+  reg->set_coefficient(0.004);
+  sgd.Setup(opt_conf);
+  sgd.SetLearningRateGenerator([](int step) {
+    if (step <= 120)
+      return 0.001;
+    else if (step <= 130)
+      return 0.0001;
+    else
+      return 0.00001;
+  });
+
+  SoftmaxCrossEntropy loss;
+  Accuracy acc;
+  net.Compile(true, &sgd, &loss, &acc);
+
+  Snapshot snap("mysnap", Snapshot::kRead, 100);
+  vector<std::pair<std::string, Tensor>> params = snap.Read();
+  net.SetParamValues(params);
+  float val = 0.f;
+  std::pair<Tensor, Tensor> ret = net.EvaluateOnBatchAccuracy(test_x, test_y, &val);
+  LOG(INFO) << "Accuracy: " << val;
 }
 }
 
@@ -201,7 +260,10 @@ int main(int argc, char **argv) {
   string data = "cifar-10-batches-bin";
   if (pos != -1) data = argv[pos + 1];
 
-  LOG(INFO) << "Start training";
-  singa::Train(nEpoch, data);
-  LOG(INFO) << "End training";
+  // LOG(INFO) << "Start training";
+  // singa::Train(nEpoch, data);
+  // LOG(INFO) << "End training";
+  LOG(INFO) << "Start evaluation";
+  singa::Eval(data);
+  LOG(INFO) << "End evaluation";
 }

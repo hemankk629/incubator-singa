@@ -22,8 +22,12 @@
 
 #include "./tensor_math.h"
 #include "./tensor_math_cpp.h"
+#ifdef USE_CUDA
 #include "./tensor_math_cuda.h"
+#endif
+#ifdef USE_OPENCL
 #include "./tensor_math_opencl.h"
+#endif
 
 #define Noaxis 9999
 
@@ -708,7 +712,7 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t> &repeats,
 
 // =============Element-wise operations====================================
 float Tensor::l1() const {
-  float nrm = 0.0f;
+  float nrm = const_float_zero;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec(
         [&nrm, this](Context *ctx) {
@@ -726,7 +730,7 @@ float Tensor::L1() const { return l1(); }
 
 /// L2 norm, Do not use Nrm2 (name conflict).
 float Tensor::l2() const {
-  float nrm = 0.0f;
+  float nrm = const_float_zero;
   TYPE_LANG_SWITCH(data_type_, DType, device_->lang(), Lang, {
     device_->Exec(
         [&nrm, this](Context *ctx) {
@@ -1054,7 +1058,7 @@ Tensor Average(const Tensor &M, int axis) {
 // TODO(wangwei) conside async exec
 template <>
 float Sum<float>(const Tensor &in) {
-  float s = 0.0f;
+  float s = const_float_zero;
   Tensor one(in.shape(), in.device(), in.data_type());
   one.SetValue(1.0f);
   TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {

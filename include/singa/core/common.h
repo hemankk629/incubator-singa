@@ -47,6 +47,19 @@ using std::atomic;
 
 namespace singa {
 
+extern float const_float_zero;
+extern float const_float_one;
+extern float const_float_minus_one;
+extern float const_float_two;
+extern float const_float_minus_two;
+extern float const_float_zero_five;
+extern float const_float_minus_zero_five;
+extern float const_float_one_five;
+extern float const_float_minus_one_five;
+extern float const_float_1e_6f;
+
+void init_const_float();
+
 namespace lang {
 /// To implemente functions using cpp libraries
 typedef struct _Cpp {

@@ -66,6 +66,20 @@ class Dense : public Layer {
     bias_.CopyData(b);
   }
 
+  const int set_param(string name, Tensor tensor) {
+	  if (bias_term_ && ends_with(name, "bias")) {
+		  bias_.ResetLike(tensor);
+		  bias_.CopyData(tensor);
+		  return 0;
+	  }
+	  if (ends_with(name, "weight")) {
+		  weight_.ResetLike(tensor);
+		  weight_.CopyData(tensor);
+		  return 0;
+	  }
+	  return -1;
+  }
+
  protected:
   /// Used in auto-encoder, where the decoder would share its weight matrix from
   /// the encoder's transposed weight matrix.

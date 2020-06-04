@@ -84,6 +84,10 @@ class Device {
 
   void CopyDataFromHostPtr(Block* dst, const void* src, size_t nBytes,
                            size_t dst_offset = 0);
+
+  void CopyDataToHostPtr(void* dst, Block* src, size_t nBytes,
+                                 size_t src_offset = 0);
+
   /// Submit the operation to the device, which may execute it right now or
   /// delay it depending on the scheduler.
   void Exec(function<void(Context*)>&& fn, const vector<Block*> read_blocks,

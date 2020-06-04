@@ -194,9 +194,27 @@ class Layer {
     return param_specs_.at(i);
   }
 
+  bool ends_with(std::string const &fullString, std::string const &ending) {
+      if (fullString.length() >= ending.length()) {
+          return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+      } else {
+          return false;
+      }
+  }
+
   /// Return pointers to parameter Tensor s.
   virtual const vector<Tensor> param_values() {
     return vector<Tensor>{};
+  }
+
+  virtual const int set_param_values(vector<Tensor>) {
+	  LOG(ERROR) << "Not implemented!";
+      return 0;
+  }
+
+  virtual const int set_param(string name, Tensor tensor) {
+  	  LOG(ERROR) << "Not implemented!";
+      return 0;
   }
 
   /// Return names of all parmaeters.
