@@ -2,12 +2,12 @@ CXX := g++
 
 INCLUDE 	:= ../include
 INCLUDE2	:= ../build/include
-SRC     	:= ../src
-OBJ     	:= ./obj
 EXE			:= cnn
 
-SRCS    := $(wildcard *.cc)
-OBJS    := $(patsubst %.cc,%.o,$(SRCS))
+SRCS    	:= $(wildcard *.cc)
+OBJS    	:= $(patsubst %.cc,%.o,$(SRCS))
+DATA_OBJS 	:= images.o labels.o mysnap.o
+OBJS		:= $(OBJS) $(DATA_OBJS)
 
 LDFLAGS := -L/usr/local/lib/
 LDLIBS	:= -lglog -lprotobuf

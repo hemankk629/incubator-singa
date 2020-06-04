@@ -9,8 +9,16 @@ cd $DST
 
 cp ../tool/posit/Makefile .
 
-cp ../examples/cifar10/cifar10.h .
-cp ../examples/cifar10/cnn.cc .
+# cp ../examples/cifar10/cifar10.h .
+cp ../examples/cifar10/cnn-bare.cc .
+cp ../examples/cifar10/mem_reader.h .
+cp ../examples/cifar10/mem_reader.cc .
+cp ../examples/cifar10/objects.h .
+
+cp ../examples/cifar10/images.o .
+cp ../examples/cifar10/labels.o .
+cp ../examples/cifar10/mysnap.o .
+
 cp ../src/core/tensor/* .
 cp ../src/core/device/device.cc .
 cp ../src/core/device/platform.cc .

@@ -209,28 +209,19 @@ void Train(int num_epoch, string data_dir) {
 
 void Eval(string data_dir) {
   Cifar10 data(data_dir);
-  Tensor train_x, train_y, test_x, test_y;
+  Tensor test_x, test_y;
   {
-    auto train = data.ReadTrainData();
-    size_t nsamples = train.first.shape(0);
-    auto mtrain =
-         Reshape(train.first, Shape{nsamples, train.first.Size() / nsamples});
-    const Tensor& mean = Average(mtrain, 0);
-    SubRow(mean, &mtrain);
-    train_x = Reshape(mtrain, train.first.shape());
-    train_y = train.second;
     auto test = data.ReadTestData();
-    nsamples = test.first.shape(0);
+    size_t nsamples = test.first.shape(0);
     auto mtest =
         Reshape(test.first, Shape{nsamples, test.first.Size() / nsamples});
+    const Tensor& mean = Average(mtest, 0);
     SubRow(mean, &mtest);
     test_x = Reshape(mtest, test.first.shape());
     test_y = test.second;
   }
-  CHECK_EQ(train_x.shape(0), train_y.shape(0));
   CHECK_EQ(test_x.shape(0), test_y.shape(0));
-  LOG(INFO) << "Training samples = " << train_y.shape(0)
-            << ", Test samples = " << test_y.shape(0);
+  LOG(INFO) << "Test samples = " << test_y.shape(0);
   auto net = CreateNet();
   SGD sgd;
   OptimizerConf opt_conf;
@@ -269,10 +260,10 @@ int main(int argc, char **argv) {
   string data = "cifar-10-batches-bin";
   if (pos != -1) data = argv[pos + 1];
 
-  LOG(INFO) << "Start training";
-  singa::Train(nEpoch, data);
-  LOG(INFO) << "End training";
-  // LOG(INFO) << "Start evaluation";
-  // singa::Eval(data);
-  // LOG(INFO) << "End evaluation";
+  // LOG(INFO) << "Start training";
+  // singa::Train(nEpoch, data);
+  // LOG(INFO) << "End training";
+  LOG(INFO) << "Start evaluation";
+  singa::Eval(data);
+  LOG(INFO) << "End evaluation";
 }

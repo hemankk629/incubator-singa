@@ -6,11 +6,25 @@ namespace singa {
 float const_float_zero = 0.f;
 float const_float_one = 1.f;
 float const_float_minus_one = -1.f;
+float const_float_two = 2.f;
+float const_float_minus_two = -2.f;
+float const_float_zero_five = 0.5f;
+float const_float_minus_zero_five = -0.5f;
+float const_float_one_five = 1.5f;
+float const_float_minus_one_five = -1.5f;
+float const_float_1e_6f = 1e-6f;
 
 void init_const_float() {
 	const_float_zero = 0.f;
 	const_float_one = 1.f;
 	const_float_minus_one = -1.f;
+	const_float_two = 2.f;
+	const_float_minus_two = -2.f;
+	const_float_zero_five = 0.5f;
+	const_float_minus_zero_five = -0.5f;
+	const_float_one_five = 1.5f;
+	const_float_minus_one_five = -1.5f;
+	const_float_1e_6f = 1e-6f;
 }
 
 float max_float(float a, float b) {
