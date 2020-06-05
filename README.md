@@ -52,9 +52,9 @@ Distributed deep learning system
 * [Development Mailing List](mailto:dev-subscribe@singa.apache.org) ([Archive](http://mail-archives.apache.org/mod_mbox/singa-dev/))
 * [Commits Mailing List](mailto:commits-subscribe@singa.apache.org) ([Archive](http://mail-archives.apache.org/mod_mbox/singa-commits/))
 
-## This Branch
+## This Branch (lite-posit-3-0-0)
 
-This branch contains the code to build fat executables to be run on a posit hardware.
+This branch contains the code to build fat executables to be run on a posit hardware, starting from Apache Singa 3.0.0.
 
 How to run the code on an x86/64 host:
 
@@ -95,6 +95,13 @@ Build docker image with posit support:
 
 ```
 docker build --rm=false /home/dumi/git/incubator-singa/tool/docker/devel/ubuntu/cuda10-posit -t dumi/singa:devel-cuda10-cudnn7-posit
+```
+
+or
+
+```
+cd tool/docker/devel/ubuntu/cuda10-posit
+docker build . -t dumi/singa:devel-cuda10-cudnn7-posit
 ```
 
 TBD: how to compile and run on the posit hardware.
