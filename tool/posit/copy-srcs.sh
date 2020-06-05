@@ -9,7 +9,6 @@ cd $DST
 
 cp ../tool/posit/Makefile .
 
-# cp ../examples/cifar10/cifar10.h .
 cp ../examples/cifar10/cnn-bare.cc .
 cp ../examples/cifar10/mem_reader.h .
 cp ../examples/cifar10/mem_reader.cc .
@@ -36,7 +35,14 @@ cp ../src/model/feed_forward_net.cc .
 cp ../build/src/*.h .
 cp ../build/src/*.cc .
 
+cp -r ../include/singa .
+rsync -a --ignore-existing ../build/include/singa/ singa/
+
+cp /usr/local/lib/libprotobuf.a .
+
 rm -f cudnn*
 rm -f opencl*
 rm -f *.cu
 rm -f *.cu
+rm -f *.cl
+rm -f tensor_math_opencl.h tensor_math_cuda.h

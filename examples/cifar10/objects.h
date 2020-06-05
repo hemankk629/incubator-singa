@@ -22,13 +22,14 @@
 #define USE_FLOAT_IMAGE
 
 #ifdef USE_FLOAT_IMAGE
-extern const float* _binary_images_bin_start;
+extern unsigned char _binary_images_bin_start;
 #else
-extern const char* _binary_images_int_bin_start;
+extern unsigned char _binary_images_int_bin_start;
 #endif
 
-extern const int* _binary_labels_bin_start;
-extern char* _binary_mysnap_bin_start;
-extern int _binary_mysnap_bin_size;
+extern unsigned char _binary_labels_bin_start;
+extern unsigned char _binary_mysnap_bin_start;
+extern unsigned char _binary_mysnap_bin_end;
+extern unsigned char _binary_mysnap_bin_size;
 
 #endif

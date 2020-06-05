@@ -174,7 +174,10 @@ vector<std::pair<std::string, Tensor>> LoadParams() {
 	singa::TensorProto tp;
 	std::string key, val;
 
-	MemReader mem_reader((char*)&_binary_mysnap_bin_start, _binary_mysnap_bin_size);
+	int param_size = &_binary_mysnap_bin_end - &_binary_mysnap_bin_start;
+	LOG(INFO) << "Size of parameters: " << param_size;
+
+	MemReader mem_reader((char*)&_binary_mysnap_bin_start, param_size);
 
 	while (mem_reader.Read(&key, &val)) {
 		CHECK(param_names_.count(key) == 0);

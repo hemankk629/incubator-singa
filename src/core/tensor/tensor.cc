@@ -19,8 +19,12 @@
 // #include "singa/utils/stacktrace.h"
 #include "./tensor_math.h"
 #include "./tensor_math_cpp.h"
+#ifdef USE_CUDA
 #include "./tensor_math_cuda.h"
+#endif
+#ifdef USE_OPENCL
 #include "./tensor_math_opencl.h"
+#endif
 #include <utility>
 #include <algorithm>
 

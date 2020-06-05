@@ -28,7 +28,8 @@
 #include <sstream>
 #include <string>
 #ifdef USE_GLOG
-#include <glog/logging.h>
+#undef USE_GLOG
+// #include <glog/logging.h>
 #endif
 
 namespace singa {
