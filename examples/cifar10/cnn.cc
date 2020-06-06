@@ -245,7 +245,16 @@ void Eval(string data_dir) {
   Snapshot snap("mysnap", Snapshot::kRead, 100);
   vector<std::pair<std::string, Tensor>> params = snap.Read();
   net.SetParamValues(params);
+
+#ifdef USE_CUDNN
+  auto dev = std::make_shared<CudaGPU>();
+  net.ToDevice(dev);
+  test_x.ToDevice(dev);
+  test_y.ToDevice(dev);
+#endif  // USE_CUDNN
+
   float val = 0.f;
+  LOG(INFO) << "Start evaluation";
   std::pair<Tensor, Tensor> ret = net.EvaluateOnBatchAccuracy(test_x, test_y, &val);
   LOG(INFO) << "Accuracy: " << val;
 }
