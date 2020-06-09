@@ -355,9 +355,11 @@ void Tensor::FromBytes(uint8_t *buffer, size_t max_size) {
 	size_t len;
 
 	if (block_ != nullptr && block_->DecRefCount() == 0)
-	device_->FreeBlock(block_);
+		device_->FreeBlock(block_);
+	block_ = nullptr;
 
 	// Shape - vector<size_t>
+	shape_.clear();
 	memcpy(&len, ptr, sizeof(size_t));
 	ptr += sizeof(size_t);
 	for (size_t i = 0; i < len; i++) {
@@ -372,9 +374,9 @@ void Tensor::FromBytes(uint8_t *buffer, size_t max_size) {
 	ptr += sizeof(int);
 
 	// stride - vector<int>
+	stride_.clear();
 	memcpy(&len, ptr, sizeof(size_t));
 	ptr += sizeof(size_t);
-	len = stride_.size();
 	for (size_t i = 0; i < len; i++) {
 		int val;
 		memcpy(&val, ptr, sizeof(int));
