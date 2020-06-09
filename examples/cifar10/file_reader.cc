@@ -35,7 +35,7 @@ void FileReader::OpenForWrite(std::string file_name) {
 	if (isOpenForWrite_)
 		fout_.close();
 
-	fout_.open(file_name, std::ios::binary | std::ios::out | std::ios::trunc);
+	fout_.open(file_name, std::ios::binary | std::ios::out);
 	CHECK(fout_.is_open()) << "Cannot create file " << file_name;
 
 	isOpenForRead_ = false;
@@ -68,6 +68,8 @@ bool FileReader::Read(std::string* key, uint8_t* bytes, size_t* size) {
 	if (fin_.gcount() != *size)
 		return false;
 
+	LOG(INFO) << "Read key " << *key << " data size " << *size;
+
 	return true;
 }
 
@@ -97,7 +99,7 @@ void FileReader::Write(std::string key, uint8_t* bytes, size_t size) {
 
 	LOG(INFO) << "Write key " << key << " data size " << size;
 
-	size_t key_len = strlen(key.c_str());
+	size_t key_len = strlen(key.c_str()) + 1;
 	fout_.write((char*)&key_len, sizeof(size_t));
 	fout_.write(key.c_str(), key_len);
 	fout_.write((char*)&size, sizeof(size_t));
@@ -109,7 +111,7 @@ void FileReader::Write(std::string key, Tensor tensor) {
 
 	uint8_t* buffer = nullptr;
 	size_t size;
-	tensor.ToBytes(buffer, 0, &size);
+	tensor.ToBytes(&buffer, 0, &size);
 	Write(key, buffer, size);
 	delete buffer;
 }

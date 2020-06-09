@@ -149,8 +149,8 @@ class Tensor {
 #ifndef LITE_POSIT
   void ToProto(singa::TensorProto *proto) const;
 #endif
-  void ToBytes(uint8_t *buffer, size_t max_size, size_t *actual_size) const;
-  void FromBytes(uint8_t *buffer, size_t max_size);
+  void ToBytes(uint8_t** buffer, size_t max_size, size_t *actual_size) const;
+  void FromBytes(uint8_t* buffer, size_t max_size);
 
   /// Return average L1 norm
   float L1() const;

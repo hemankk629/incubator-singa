@@ -297,13 +297,14 @@ void Tensor::ToProto(singa::TensorProto *proto) const {
 }
 #endif // LITE_POSIT
 
-void Tensor::ToBytes(uint8_t *buffer, size_t max_size, size_t *actual_size) const {
-	if (buffer == nullptr) {
-		buffer = new uint8_t[Product(shape_) * sizeof(float) + 1024];
+void Tensor::ToBytes(uint8_t** buffer, size_t max_size, size_t *actual_size) const {
+	CHECK_NOTNULL(buffer);
+	if (*buffer == nullptr) {
+		*buffer = new uint8_t[Product(shape_) * sizeof(float) + 1024];
 	}
 	CHECK_NOTNULL(buffer);
 
-	uint8_t* ptr = buffer;
+	uint8_t* ptr = *buffer;
 	size_t len;
 
 	// Shape - vector<size_t>
@@ -346,12 +347,15 @@ void Tensor::ToBytes(uint8_t *buffer, size_t max_size, size_t *actual_size) cons
 	default: { LOG(FATAL) << "ToBytes of " << DataType_Name(data_type_) << " not implemented!"; }
 	}
 
-	*actual_size = ptr - buffer;
+	*actual_size = ptr - (*buffer);
 }
 
 void Tensor::FromBytes(uint8_t *buffer, size_t max_size) {
 	uint8_t* ptr = buffer;
 	size_t len;
+
+	if (block_ != nullptr && block_->DecRefCount() == 0)
+	device_->FreeBlock(block_);
 
 	// Shape - vector<size_t>
 	memcpy(&len, ptr, sizeof(size_t));
@@ -378,12 +382,15 @@ void Tensor::FromBytes(uint8_t *buffer, size_t max_size) {
 		stride_.push_back(val);
 	}
 
+	block_ = device_->NewBlock((int)(Product(shape()) * SizeOf(data_type_)));
+
 	// actual data
 	switch (data_type_) {
 	case kFloat32: {
 		memcpy(&len, ptr, sizeof(size_t));
 		ptr += sizeof(size_t);
-		device_->CopyDataFromHostPtr(block(), ptr, len);
+		// device_->CopyDataFromHostPtr(block(), ptr, len);
+		CopyDataFromHostPtr<float>((float*)ptr, Product(shape_));
 		ptr += len;
 		break;
 	}
