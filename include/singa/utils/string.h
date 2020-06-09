@@ -23,6 +23,7 @@
 #define SINGA_UTILS_TOKENIZER_H_
 
 #include <string>
+#include <cstring>
 #include <algorithm>
 #include "singa/utils/logging.h"
 

@@ -24,12 +24,15 @@
 #include <string>
 #include <functional>
 #include <memory>
+#include <cstring>
 
 #include "singa/singa_config.h"
 #include "singa/core/common.h"
 #include "singa/core/memory.h"
 #include "singa/core/scheduler.h"
+#ifndef LITE_POSIT
 #include "singa/proto/core.pb.h"
+#endif
 
 #ifdef USE_CUDA
 #include "singa/utils/cuda_utils.h"

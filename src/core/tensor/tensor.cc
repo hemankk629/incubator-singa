@@ -187,6 +187,7 @@ void Tensor::RepeatData(const vector<size_t>& repeats, int axis, int total_repea
   }
 }
 
+#ifndef LITE_POSIT
 void Tensor::FromProto(const singa::TensorProto &proto) {
   if (block_ != nullptr && block_->DecRefCount() == 0)
     device_->FreeBlock(block_);
@@ -293,6 +294,109 @@ void Tensor::ToProto(singa::TensorProto *proto) const {
   */
   default: { LOG(FATAL) << "Unsupported Type" << DataType_Name(data_type_); }
   }
+}
+#endif // LITE_POSIT
+
+void Tensor::ToBytes(uint8_t *buffer, size_t max_size, size_t *actual_size) const {
+	if (buffer == nullptr) {
+		buffer = new uint8_t[Product(shape_) * sizeof(float) + 1024];
+	}
+	CHECK_NOTNULL(buffer);
+
+	uint8_t* ptr = buffer;
+	size_t len;
+
+	// Shape - vector<size_t>
+	len = shape_.size();
+	memcpy(ptr, &len, sizeof(size_t));
+	ptr += sizeof(size_t);
+	for (auto s : shape_) {
+		memcpy(ptr, &s, sizeof(size_t));
+		ptr += sizeof(size_t);
+	}
+	// data_type_
+	memcpy(ptr, &data_type_, sizeof(int));
+	ptr += sizeof(int);
+	// stride_
+	len = stride_.size();
+	memcpy(ptr, &len, sizeof(size_t));
+	ptr += sizeof(size_t);
+	for (auto s : stride_) {
+		memcpy(ptr, &s, sizeof(int));
+		ptr += sizeof(int);
+	}
+	// actual data
+	switch (data_type_) {
+	case kFloat32: {
+		len = Product(shape_) * sizeof(float);
+		memcpy(ptr, &len, sizeof(size_t));
+		ptr += sizeof(size_t);
+		device_->CopyDataToHostPtr((void*)ptr, block(), len);
+		ptr += len;
+		break;
+	}
+	case kDouble: {
+		LOG(FATAL) << "ToBytes of kDouble not implemented!";
+		break;
+	}
+	case kInt: {
+		LOG(FATAL) << "ToBytes of kInt not implemented!";
+		break;
+	}
+	default: { LOG(FATAL) << "ToBytes of " << DataType_Name(data_type_) << " not implemented!"; }
+	}
+
+	*actual_size = ptr - buffer;
+}
+
+void Tensor::FromBytes(uint8_t *buffer, size_t max_size) {
+	uint8_t* ptr = buffer;
+	size_t len;
+
+	// Shape - vector<size_t>
+	memcpy(&len, ptr, sizeof(size_t));
+	ptr += sizeof(size_t);
+	for (size_t i = 0; i < len; i++) {
+		size_t val;
+		memcpy(&val, ptr, sizeof(size_t));
+		ptr += sizeof(size_t);
+		shape_.push_back(val);
+	}
+
+	// data_type_
+	memcpy(&data_type_, ptr, sizeof(int));
+	ptr += sizeof(int);
+
+	// stride - vector<int>
+	memcpy(&len, ptr, sizeof(size_t));
+	ptr += sizeof(size_t);
+	len = stride_.size();
+	for (size_t i = 0; i < len; i++) {
+		int val;
+		memcpy(&val, ptr, sizeof(int));
+		ptr += sizeof(int);
+		stride_.push_back(val);
+	}
+
+	// actual data
+	switch (data_type_) {
+	case kFloat32: {
+		memcpy(&len, ptr, sizeof(size_t));
+		ptr += sizeof(size_t);
+		device_->CopyDataFromHostPtr(block(), ptr, len);
+		ptr += len;
+		break;
+	}
+	case kDouble: {
+		LOG(FATAL) << "FromBytes of kDouble not implemented!";
+		break;
+	}
+	case kInt: {
+		LOG(FATAL) << "FromBytes of kInt not implemented!";
+		break;
+	}
+	default: { LOG(FATAL) << "FromBytes of " << DataType_Name(data_type_) << " not implemented!"; }
+	}
 }
 
 Tensor Tensor::Repeat(const vector<size_t>& repeats, int axis,

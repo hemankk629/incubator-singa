@@ -21,6 +21,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <cstring>
 #include "singa/model/layer.h"
 
 namespace singa {

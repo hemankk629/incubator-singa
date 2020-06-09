@@ -16,37 +16,41 @@
  * limitations under the License.
  */
 
-#ifndef SINGA_MEM_READER_H_
-#define SINGA_MEM_READER_H_
+#ifdef LITE_POSIT
 
-#include <string>
-#include <string.h>
+#include "singa/model/optimizer_conf.h"
 
 namespace singa {
 
-class MemReader {
- public:
+ConstraintConf::~ConstraintConf() {};
 
-  MemReader(char* src, int size);
+void ConstraintConf::CopyFrom(const ConstraintConf& from) {
+  if (&from == this) return;
+  set_type(from.type());
+  set_threshold(from.threshold());
+}
 
-  bool Read(std::string* key, std::string* value);
+RegularizerConf::~RegularizerConf() {};
 
-  void SeekToFirst();
+OptimizerConf::~OptimizerConf() {
+	// delete constraint_;
+	// delete regularizer_;
+}
 
- protected:
-  bool ReadField(std::string* content);
+void OptimizerConf::CopyFrom(const OptimizerConf& from) {
+	LOG(FATAL) << "ParseFromString not implemented";
+}
 
- private:
-  /// internal buffer
-  char* buf_;
-  /// offset inside the buf_
-  int offset_;
-  /// bytes in buf_
-  int bufsize_;
-  /// magic word
-  const char kMagicWord[2] = {'s', 'g'};
-};
+ParamSpec::ParamSpec() {
+	filler_ = new FillerConf();
+}
 
-} // end namespace singa
+ParamSpec::~ParamSpec() {
+	// delete filler_;
+	// delete constraint_;
+	// delete regularizer_;
+}
 
-#endif // SINGA_MEM_READER_H_
+}
+
+#endif // LITE_POSIT

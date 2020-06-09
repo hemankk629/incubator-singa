@@ -26,6 +26,9 @@
 #include "singa/utils/channel.h"
 #include "singa/utils/string.h"
 #include "singa/io/snapshot.h"
+#ifdef MY_FILE_READER
+#include "file_reader.h"
+#endif
 namespace singa {
 // currently supports 'cudnn' and 'singacpp'
 #ifdef USE_CUDNN
@@ -192,7 +195,12 @@ void Train(int num_epoch, string data_dir) {
   net.Train(100, num_epoch, train_x, train_y, test_x, test_y);
   test_y = net.Forward(kEval, test_x);
 
+#ifdef MY_FILE_READER
+  FileReader snap;
+  snap.OpenForWrite("myfilesnap.bin");
+#else
   Snapshot snap("mysnap", Snapshot::kWrite, 100);
+#endif
   vector<string> names = net.GetParamNames();
   vector<Tensor> params = net.GetParamValues();
   vector<string>::iterator namesIter;
@@ -201,10 +209,13 @@ void Train(int num_epoch, string data_dir) {
   for (paramsIter = params.begin(), namesIter = names.begin();
 		  paramsIter != params.end() && namesIter != names.end();
 		  paramsIter++, namesIter++) {
-	  LOG(INFO) << "Param: " << *namesIter;
+	  LOG(INFO) << "Write param: " << *namesIter;
 	  snap.Write(*namesIter, *paramsIter);
 	  idx++;
   }
+#ifdef MY_FILE_READER
+  snap.Close();
+#endif
 }
 
 void Eval(string data_dir) {
@@ -242,12 +253,20 @@ void Eval(string data_dir) {
   Accuracy acc;
   net.Compile(true, &sgd, &loss, &acc);
 
+#ifdef MY_FILE_READER
+  FileReader snap;
+  snap.OpenForRead("myfilesnap.bin");
+#else
   Snapshot snap("mysnap", Snapshot::kRead, 100);
+#endif
   vector<std::pair<std::string, Tensor>> params = snap.Read();
   net.SetParamValues(params);
   float val = 0.f;
   std::pair<Tensor, Tensor> ret = net.EvaluateOnBatchAccuracy(test_x, test_y, &val);
   LOG(INFO) << "Accuracy: " << val;
+#ifdef MY_FILE_READER
+  snap.Close();
+#endif
 }
 }
 
@@ -259,10 +278,11 @@ int main(int argc, char **argv) {
   pos = singa::ArgPos(argc, argv, "-data");
   string data = "cifar-10-batches-bin";
   if (pos != -1) data = argv[pos + 1];
-
-  // LOG(INFO) << "Start training";
-  // singa::Train(nEpoch, data);
-  // LOG(INFO) << "End training";
+/*
+  LOG(INFO) << "Start training";
+  singa::Train(nEpoch, data);
+  LOG(INFO) << "End training";
+*/
   LOG(INFO) << "Start evaluation";
   singa::Eval(data);
   LOG(INFO) << "End evaluation";

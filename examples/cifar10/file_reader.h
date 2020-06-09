@@ -16,37 +16,42 @@
  * limitations under the License.
  */
 
-#ifndef SINGA_MEM_READER_H_
-#define SINGA_MEM_READER_H_
+#ifndef SINGA_FILE_READER_H_
+#define SINGA_FILE_READER_H_
 
 #include <string>
-#include <string.h>
+#include <cstring>
+#include <memory>
+#include <fstream>
+
+#include "singa/core/tensor.h"
+#include "singa/utils/logging.h"
 
 namespace singa {
 
-class MemReader {
- public:
+class FileReader {
+public:
+	void OpenForRead(std::string file_name);
 
-  MemReader(char* src, int size);
+	void OpenForWrite(std::string file_name);
 
-  bool Read(std::string* key, std::string* value);
+	void Close();
 
-  void SeekToFirst();
+	bool Read(std::string* key, uint8_t* bytes, size_t* size);
 
- protected:
-  bool ReadField(std::string* content);
+	std::vector<std::pair<std::string, Tensor>> Read();
 
- private:
-  /// internal buffer
-  char* buf_;
-  /// offset inside the buf_
-  int offset_;
-  /// bytes in buf_
-  int bufsize_;
-  /// magic word
-  const char kMagicWord[2] = {'s', 'g'};
+	void Write(std::string key, uint8_t* bytes, size_t size);
+
+	void Write(std::string key, Tensor tensor);
+
+private:
+	std::ofstream fout_;
+	std::ifstream fin_;
+	bool isOpenForWrite_ = false;
+	bool isOpenForRead_ = false;
 };
 
-} // end namespace singa
+} // namespace singa
 
-#endif // SINGA_MEM_READER_H_
+#endif // SINGA_FILE_READER_H_

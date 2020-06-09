@@ -25,7 +25,9 @@
 
 #include "singa/core/common.h"
 #include "singa/core/device.h"
+#ifndef LITE_POSIT
 #include "singa/proto/core.pb.h"
+#endif
 #include "singa/utils/logging.h"
 
 using std::vector;
@@ -144,7 +146,11 @@ class Tensor {
   }
 
   /// Serialize data, shape and transpose to protobuf object.
+#ifndef LITE_POSIT
   void ToProto(singa::TensorProto *proto) const;
+#endif
+  void ToBytes(uint8_t *buffer, size_t max_size, size_t *actual_size) const;
+  void FromBytes(uint8_t *buffer, size_t max_size);
 
   /// Return average L1 norm
   float L1() const;
@@ -170,7 +176,9 @@ class Tensor {
   void CopyData(const Tensor &other);
 
   /// Deserialize data, shape and transpose from protobuf object.
+#ifndef LITE_POSIT
   void FromProto(const singa::TensorProto &proto);
+#endif
 
 
   /// TODO(wangwei) merge RepeatData into  Repeat?

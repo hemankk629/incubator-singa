@@ -22,6 +22,9 @@
 #include <vector>
 #include <stack>
 #include "singa/model/layer.h"
+#ifdef LITE_POSIT
+#include "singa/model/optimizer_conf.h"
+#endif
 
 namespace singa {
 class Dense : public Layer {

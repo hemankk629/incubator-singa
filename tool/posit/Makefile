@@ -8,11 +8,11 @@ OBJS    	:= $(patsubst %.cc,%.o,$(SRCS))
 DATA_OBJS 	:= images.o labels.o mysnap.o
 OBJS		:= $(DATA_OBJS) $(OBJS)
 
-CFLAGS  := -I$(INCLUDE) -std=c++11
+CFLAGS  := -I$(INCLUDE) -DLITE_POSIT -g
 
 all: $(EXE)
 
-$(EXE): $(OBJS) libprotobuf.a 
+$(EXE): $(OBJS)
 	$(CXX) $(CFLAGS) $^ -o $@
     
 %.o: %.cc

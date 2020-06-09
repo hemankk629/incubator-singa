@@ -19,7 +19,12 @@
 #ifndef SINGA_MODEL_METRIC_H_
 #define SINGA_MODEL_METRIC_H_
 #include "singa/core/tensor.h"
+#ifndef LITE_POSIT
 #include "singa/proto/model.pb.h"
+#else
+#include "singa/model/optimizer_conf.h"
+#endif
+#include <cstring>
 namespace singa {
 
 /// The base metric class, which declares the APIs for computing the performance

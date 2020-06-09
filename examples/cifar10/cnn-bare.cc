@@ -95,6 +95,7 @@ LayerConf GenReLUConf(string name) {
 	LayerConf conf;
 	conf.set_name(name);
 	conf.set_type(engine + "_relu");
+	conf.mutable_relu_conf();
 	return conf;
 }
 
@@ -135,6 +136,7 @@ LayerConf GenFlattenConf(string name) {
 	LayerConf conf;
 	conf.set_name(name);
 	conf.set_type("singa_flatten");
+	conf.mutable_flatten_conf();
 	return conf;
 }
 
@@ -171,7 +173,9 @@ std::pair<Tensor, Tensor> LoadData() {
 vector<std::pair<std::string, Tensor>> LoadParams() {
 	std::unordered_set<std::string> param_names_;
 	std::unordered_map<std::string, Tensor> param_map_;
+#ifndef LITE_POSIT
 	singa::TensorProto tp;
+#endif
 	std::string key, val;
 
 	int param_size = &_binary_mysnap_bin_end - &_binary_mysnap_bin_start;
@@ -183,8 +187,10 @@ vector<std::pair<std::string, Tensor>> LoadParams() {
 		CHECK(param_names_.count(key) == 0);
 		LOG(INFO) << "Read param: " << key;
 		param_names_.insert(key);
+#ifndef LITE_POSIT
 		CHECK(tp.ParseFromString(val));
 		param_map_[key].FromProto(tp);
+#endif
 	}
 	std::vector<std::pair<std::string, Tensor>> ret;
 	for (auto it = param_map_.begin(); it != param_map_.end(); ++it)

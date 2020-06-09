@@ -25,7 +25,11 @@
 #include <utility>
 #include <memory>
 #include "singa/core/tensor.h"
+#ifndef LITE_POSIT
 #include "singa/proto/model.pb.h"
+#else
+#include "singa/model/optimizer_conf.h"
+#endif
 #include "singa/utils/factory.h"
 
 namespace singa {
@@ -227,7 +231,13 @@ class Layer {
   /// Return the 'i'-th parameter name.
   const string& param_name(size_t i) {
     CHECK_LT(i, param_specs_.size());
+#ifdef LITE_POSIT
+    std::string* str = new std::string(param_specs_.at(i).name());
+    CHECK_NOTNULL(str);
+    return *str;
+#else
     return param_specs_.at(i).name();
+#endif
   }
 
   /// Each layer instance would optionally have a name.

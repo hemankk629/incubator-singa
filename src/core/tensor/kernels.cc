@@ -105,6 +105,7 @@ float my_cblas_sasum(const int __N, const float *__X, const int __incX) {
 void my_cblas_saxpy(const int __N, const float __alpha, const float *__X, const int __incX, float *__Y, const int __incY) {
 	// we suppose the strides are identical
 	CHECK_EQ(__incX, __incY);
+#pragma omp parallel for shared(__N, __incY, __X, __Y, __alpha) private(i)
 	for (int i = 0; i < __N; i += __incY)
 		__Y[i] = __Y[i] + __alpha * __X[i];
 }
@@ -120,6 +121,7 @@ float my_cblas_sdot(const int __N, const float *__X, const int __incX, const flo
 }
 
 void my_cblas_sscal(const int __N, const float __alpha, float *__X, const int __incX) {
+#pragma omp parallel for shared(__N, __incX, __X, __alpha) private(i)
 	for (int i = 0; i < __N; i += __incX) {
 		__X[i] = __X[i] * __alpha;
 	}
