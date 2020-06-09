@@ -99,22 +99,22 @@ ENV PATH=/root/mpich-3.3.2/build/bin:$PATH
 # build incubator singa with cuda
 RUN git clone https://github.com/dloghin/incubator-singa.git $HOME/incubator-singa-cuda \
     && cd $HOME/incubator-singa-cuda \
-    && git checkout lite-posit-2-0-0 \
+    && git checkout lite-posit-3-0-0 \
     && mkdir build && cd build \
     && /usr/local/bin/cmake -DUSE_CUDA=ON -DUSE_PYTHON3=ON ..
 RUN cd $HOME/incubator-singa-cuda/build && make
-RUN cd $HOME/incubator-singa-cuda/examples/cifar10 && make cnn-cuda
-RUN cd $HOME/incubator-singa-cuda/examples/cifar10 && python3 download_data.py bin
+RUN cd $HOME/incubator-singa-cuda/examples/cpp/cifar10 && make cnn-cuda
+RUN cd $HOME/incubator-singa-cuda/examples/cpp/cifar10 && python3 download_data.py bin
 
 # build incubator singa without cuda
 RUN git clone https://github.com/dloghin/incubator-singa.git $HOME/incubator-singa-cpp \
     && cd $HOME/incubator-singa-cpp \
-    && git checkout lite-posit-2-0-0 \
+    && git checkout lite-posit-3-0-0 \
     && mkdir build && cd build \
     && /usr/local/bin/cmake -DUSE_CUDA=OFF -DUSE_PYTHON3=ON ..
 RUN cd $HOME/incubator-singa-cpp/build && make
-RUN cd $HOME/incubator-singa-cpp/examples/cifar10 && make cnn
-RUN cd $HOME/incubator-singa-cpp/examples/cifar10 && python3 download_data.py bin
+RUN cd $HOME/incubator-singa-cpp/examples/cpp/cifar10 && make cnn
+RUN cd $HOME/incubator-singa-cpp/examples/cpp/cifar10 && python3 download_data.py bin
 
 #WORKDIR $HOME/incubator-singa
 EXPOSE 22
