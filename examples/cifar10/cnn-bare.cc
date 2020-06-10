@@ -40,7 +40,8 @@ const std::string engine = "singacpp";
 
 static const size_t kImageSize = 32;
 static const size_t kImageVol = 3072;
-static const size_t kBatchSize = 10000;
+// batch size is 10000 but we may need to lower it to run on Freedom
+static const size_t kBatchSize = 1000;
 
 static const float my_alpha = 5e-05;
 static const float my_beta = 0.75;
@@ -171,11 +172,10 @@ std::pair<Tensor, Tensor> LoadData() {
 }
 
 vector<std::pair<std::string, Tensor>> LoadParams() {
+#ifndef LITE_POSIT
 	std::unordered_set<std::string> param_names_;
 	std::unordered_map<std::string, Tensor> param_map_;
-#ifndef LITE_POSIT
 	singa::TensorProto tp;
-#endif
 	std::string key, val;
 
 	int param_size = &_binary_mysnap_bin_end - &_binary_mysnap_bin_start;
@@ -183,19 +183,25 @@ vector<std::pair<std::string, Tensor>> LoadParams() {
 
 	MemReader mem_reader((char*)&_binary_mysnap_bin_start, param_size);
 
+	return mem_reader.Read();
+
 	while (mem_reader.Read(&key, &val)) {
 		CHECK(param_names_.count(key) == 0);
 		LOG(INFO) << "Read param: " << key;
 		param_names_.insert(key);
-#ifndef LITE_POSIT
 		CHECK(tp.ParseFromString(val));
 		param_map_[key].FromProto(tp);
-#endif
 	}
 	std::vector<std::pair<std::string, Tensor>> ret;
 	for (auto it = param_map_.begin(); it != param_map_.end(); ++it)
 		ret.push_back(*it);
 	return ret;
+#else
+	int param_size = &_binary_myfilesnap_bin_end - &_binary_myfilesnap_bin_start;
+	LOG(INFO) << "Size of parameters: " << param_size;
+	MemReader mem_reader((char*)&_binary_myfilesnap_bin_start, param_size);
+	return mem_reader.Read();
+#endif
 }
 
 void Eval() {

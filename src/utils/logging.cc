@@ -78,6 +78,21 @@ namespace logging {
 LogMessage::LogMessage(const char* fname, int line, int severity)
     : fname_(fname), line_(line), severity_(severity) {}
 
+#ifdef LITE_POSIT
+void LogMessage::GenerateLogMessage() {
+	DoLogging();
+}
+
+void LogMessage::DoLogging() {
+  printf("[%c %s:%d] %s\n",
+          "IWEF"[severity_],
+          fname_,
+          line_,
+          str().c_str());
+}
+
+#else // LITE_POSIT
+
 inline pid_t GetPID() { return getpid(); }
 inline pid_t GetTID() { return (pid_t)(uintptr_t)pthread_self(); }
 
@@ -108,6 +123,7 @@ void LogMessage::DoLogging(FILE* file, const struct tm& tm_time) {
           line_,
           str().c_str());
 }
+#endif // LITE_POSIT
 
 LogMessage::~LogMessage() { GenerateLogMessage(); }
 

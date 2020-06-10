@@ -13,5 +13,8 @@ cnn-cuda-myfile: cnn.cc file_reader.cc
 cnn-bare: images.o labels.o mysnap.o mem_reader.cc cnn-bare.cc
 	g++ -Wall -g -I../../include -I../../build/include $^ -o $@ -L../../build/lib -L/usr/local/lib -lsinga -lprotobuf -lglog
 
+cnn-bare-myfile: images.o labels.o myfilesnap.o mem_reader.cc cnn-bare.cc
+	g++ -DMY_FILE_READER -Wall -g -I../../include -I../../build/include $^ -o $@ -L../../build/lib -L/usr/local/lib -lsinga -lprotobuf -lglog
+
 clean:
 	rm -f cnn cnn-cuda

@@ -20,7 +20,10 @@
 #define SINGA_MEM_READER_H_
 
 #include <string>
-#include <string.h>
+#include <cstring>
+#include <vector>
+
+#include "singa/core/tensor.h"
 
 namespace singa {
 
@@ -29,9 +32,13 @@ class MemReader {
 
   MemReader(char* src, int size);
 
+  void SeekToFirst();
+
   bool Read(std::string* key, std::string* value);
 
-  void SeekToFirst();
+  bool Read(std::string* key, char** bytes, size_t* size);
+
+  std::vector<std::pair<std::string, Tensor>> Read();
 
  protected:
   bool ReadField(std::string* content);

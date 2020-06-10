@@ -3,8 +3,8 @@
 DST="build_posit"
 
 cd ../../
-# rm -rf $DST
-# mkdir $DST
+rm -rf $DST
+mkdir $DST
 cd $DST
 
 cp ../tool/posit/Makefile .
@@ -16,7 +16,7 @@ cp ../examples/cifar10/objects.h .
 
 cp ../examples/cifar10/images.o .
 cp ../examples/cifar10/labels.o .
-cp ../examples/cifar10/mysnap.o .
+cp ../examples/cifar10/myfilesnap.o .
 
 cp ../src/core/tensor/* .
 cp ../src/core/device/device.cc .
@@ -41,5 +41,6 @@ rm -f *.cu
 rm -f *.cu
 rm -f *.cl
 rm -f tensor_math_opencl.h tensor_math_cuda.h
-rm -f prelu.cc prelu.h rnn.cc rnn.h slice.cc slice.h dropout.cc dropout.h concat.cc concat.h batchnorm.cc batchnorm.h
+rm -f prelu.cc prelu.h rnn.cc rnn.h slice.cc slice.h dropout.cc dropout.h concat.cc concat.h \
+batchnorm.cc batchnorm.h local_all_reduce.* local_updater.*
 rm -rf singa/proto

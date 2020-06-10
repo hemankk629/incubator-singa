@@ -5,7 +5,7 @@ EXE		:= cnn
 
 SRCS    	:= $(wildcard *.cc)
 OBJS    	:= $(patsubst %.cc,%.o,$(SRCS))
-DATA_OBJS 	:= images.o labels.o mysnap.o
+DATA_OBJS 	:= images.o labels.o myfilesnap.o
 OBJS		:= $(DATA_OBJS) $(OBJS)
 
 CFLAGS  := -I$(INCLUDE) -DLITE_POSIT -g

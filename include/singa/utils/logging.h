@@ -62,7 +62,11 @@ class LogMessage : public std::basic_ostringstream<char> {
 
  protected:
   void GenerateLogMessage();
+#ifdef LITE_POSIT
+  void DoLogging();
+#else
   void DoLogging(FILE* file, const struct tm& tm_time);
+#endif
 
  private:
   const char* fname_;

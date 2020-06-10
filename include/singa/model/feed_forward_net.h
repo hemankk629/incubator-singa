@@ -20,8 +20,11 @@
 #include "singa/model/layer.h"
 #include "singa/model/loss.h"
 #include "singa/model/metric.h"
+#include "singa/model/optimizer.h"
 #include "singa/model/updater.h"
+#ifndef LITE_POSIT
 #include <thread>
+#endif
 #include <memory>
 namespace singa {
 
@@ -134,6 +137,7 @@ class FeedForwardNet {
   /// Set the data type of each layer.
   void AsType(DataType dtype);
 
+#ifndef LITE_POSIT
   /// A wrapper method to spawn a thread to execute Train() method.
   std::thread TrainThread(size_t batchsize, int nb_epoch, const Tensor& x,
                           const Tensor& y, const Tensor& val_x,
@@ -147,6 +151,7 @@ class FeedForwardNet {
                           const Tensor& y) {
     return std::thread([=]() { Train(batchsize, nb_epoch, x, y); });
   }
+#endif
 
   const vector<std::shared_ptr<Layer>> layers() const { return layers_; }
   const vector<string> GetParamNames() const;
