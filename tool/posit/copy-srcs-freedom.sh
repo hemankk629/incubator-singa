@@ -9,7 +9,8 @@ mkdir -p $DST
 cd $DST
 rm -r *
 
-cp $SRC/tool/posit/Makefile-fp32 Makefile
+# cp $SRC/tool/posit/Makefile-fp32 Makefile
+cp $SRC/tool/posit/Makefile Makefile
 
 cp $SRC/examples/cifar10/cnn-bare.cc .
 cp $SRC/examples/cifar10/mem_reader.h .

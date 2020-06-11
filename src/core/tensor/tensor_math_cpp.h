@@ -23,7 +23,7 @@
 #include <cfloat>
 #include "singa/core/common.h"
 #include "singa/core/tensor.h"
-#include <math.h>
+//#include <math.h>
 #include <algorithm>
 #include <sstream>
 #include <iterator>

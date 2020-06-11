@@ -1,4 +1,5 @@
 CXX := g++
+LD := g++
 
 INCLUDE 	:= .
 EXE		:= cnn
@@ -13,7 +14,7 @@ CFLAGS  := -I$(INCLUDE) -DLITE_POSIT -g
 all: $(EXE)
 
 $(EXE): $(OBJS)
-	$(CXX) $(CFLAGS) $^ -o $@
+	$(LD) $^ -o $@
     
 %.o: %.cc
 	$(CXX) $(CFLAGS) -c $< -o $@
