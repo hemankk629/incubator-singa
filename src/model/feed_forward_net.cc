@@ -42,7 +42,7 @@ std::shared_ptr<Layer> FeedForwardNet::Add(const LayerConf& conf,
   else
     layer->Setup(*sample_shape, conf);
   Add(layer);
-  LOG(INFO) << layer->name() << VecToStr(layer->GetOutputSampleShape());
+  // LOG(INFO) << layer->name() << VecToStr(layer->GetOutputSampleShape());
   return layer;
 }
 
@@ -74,7 +74,7 @@ const int FeedForwardNet::SetParamValues(vector<std::pair<std::string, Tensor>> 
 				// LOG(INFO) << "\tParam: " << paramsIter->first;
 
 				if (layerParamNamesIter->c_str() != NULL && paramsIter->first.compare(layerParamNamesIter->c_str()) == 0) {
-					LOG(INFO) << "Found match " << layerParamNamesIter->c_str();
+					// LOG(INFO) << "Found match " << layerParamNamesIter->c_str();
 					layer->set_param(*layerParamNamesIter, paramsIter->second);
 				}
 			}
@@ -116,7 +116,7 @@ void FeedForwardNet::Compile(bool shuffle, bool to_register,
     }
     auto init = CreateInitializer(specs[k].filler());
     init->Fill(params[k]);
-    LOG(INFO) << specs[k].name() << " : " << params[k].L1();
+    // LOG(INFO) << specs[k].name() << " : " << params[k].L1();
   }
 }
 
@@ -310,6 +310,12 @@ std::pair<Tensor, Tensor> FeedForwardNet::EvaluateOnBatchAccuracy(const Tensor& 
   const Tensor m = metric_->Forward(fea, y);
   *acc = metric_->Evaluate(fea, y);
   return std::make_pair(l, m);
+}
+
+Tensor FeedForwardNet::EvaluateOnBatchOutput(const Tensor& x, const Tensor& y) {
+  int flag = kEval;
+  const Tensor fea = Forward(flag, x);
+  return fea;
 }
 
 const Tensor FeedForwardNet::Predict(const Tensor& x, size_t batchsize) {

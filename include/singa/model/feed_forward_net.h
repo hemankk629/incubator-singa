@@ -111,6 +111,9 @@ class FeedForwardNet {
   std::pair<Tensor, Tensor> EvaluateOnBatchAccuracy(
 		  const Tensor& x, const Tensor& y, float* acc);
 
+  Tensor EvaluateOnBatchOutput(
+		  const Tensor& x, const Tensor& y);
+
   /// Predict the probability distributation over candicate classes for each
   /// data sample. 'batchsize' is used for controlling the memory footprint.
   /// It should be smaller than the total number of samples.
