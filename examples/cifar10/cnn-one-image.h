@@ -11,7 +11,7 @@
 
 namespace singa {
 
-const string snapshot_name="mysnap-30epoch";
+const string snapshot_name="mysnap";
 
 int Eval(string file);
 

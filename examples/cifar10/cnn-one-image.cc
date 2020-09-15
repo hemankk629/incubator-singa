@@ -185,20 +185,23 @@ int Eval(string file) {
 	net.ToDevice(dev);
 	test_x.ToDevice(dev);
 	test_y.ToDevice(dev);
+	Tensor ttmp =  net.EvaluateOnBatchOutput(test_x, test_y);
+	Tensor tout = ttmp.ToHost();
+#else
+	Tensor tout =  net.EvaluateOnBatchOutput(test_x, test_y);
 #endif  // USE_CUDNN
 
-	Tensor tout =  net.EvaluateOnBatchOutput(test_x, test_y);
-	float vals[100];
-	tout.GetValue(vals, 20);
-	float* x = (float*)tout.block()->data();
+	float vals[10];
+	tout.GetValue(vals, 10);
 	float max = vals[0];
 	int max_pos = 0;
+	LOG(INFO) << 0 << " " << vals[0];
 	for (int i = 1; i < 10; i++) {
 		if (max < vals[i]) {
 			max = vals[i];
 			max_pos = i;
 		}
-		LOG(INFO) << vals[i] << " " << x[i];
+		LOG(INFO) << i << " " << vals[i];
 	}
 #ifdef MY_FILE_READER
 	snap.Close();
