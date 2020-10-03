@@ -116,6 +116,18 @@ FeedForwardNet CreateNet() {
 	return net;
 }
 
+const std::pair<Tensor, Tensor> ReadImageBuffer(char* buff) {
+	Tensor image(Shape{1, 3, kImageDim, kImageDim});
+	Tensor label(Shape{1}, kInt);
+	float data[kImageSize-1];
+	int label_val = (int)buff[0];
+	label.CopyDataFromHostPtr(&label_val, 1, 0);
+	for (int i = 0; i < kImageSize - 1; i++)
+		data[i] = (float)((int)buff[i+1]);
+	image.CopyDataFromHostPtr(data, kImageSize - 1, 0);
+	return std::make_pair(image, label);
+}
+
 const std::pair<Tensor, Tensor> ReadImageFile(string file) {
 	Tensor image(Shape{1, 3, kImageDim, kImageDim});
 	Tensor label(Shape{1}, kInt);
@@ -129,18 +141,105 @@ const std::pair<Tensor, Tensor> ReadImageFile(string file) {
 	label.CopyDataFromHostPtr(&label_val, 1, 0);
 	for (int i = 0; i < kImageSize - 1; i++)
 		data[i] = (float)((int)buff[i+1]);
-	// image.CopyDataFromHostPtr(data, sizeof(float) * (kImageSize - 1), 0);
 	image.CopyDataFromHostPtr(data, kImageSize - 1, 0);
 	data_file.close();
 	return std::make_pair(image, label);
 }
 
-int Eval(string file) {
+int Eval(std::pair<Tensor, Tensor> test) {
+	Tensor test_x, test_y;
+	test_x = test.first;
+	test_y = test.second;
+
+	CHECK_EQ(test_x.shape(0), test_y.shape(0));
+	LOG(INFO) << "Test samples = " << test_y.shape(0);
+	auto net = CreateNet();
+	SGD sgd;
+	OptimizerConf opt_conf;
+	opt_conf.set_momentum(0.9);
+	auto reg = opt_conf.mutable_regularizer();
+	reg->set_coefficient(0.004);
+	sgd.Setup(opt_conf);
+	sgd.SetLearningRateGenerator([](int step) {
+		if (step <= 120)
+			return 0.001;
+		else if (step <= 130)
+			return 0.0001;
+		else
+			return 0.00001;
+	});
+
+	SoftmaxCrossEntropy loss;
+	Accuracy acc;
+	net.Compile(true, &sgd, &loss, &acc);
+
+#ifdef MY_FILE_READER
+	FileReader snap;
+	snap.OpenForRead("myfilesnap.bin");
+#else
+	Snapshot snap(snapshot_name, Snapshot::kRead, 100);
+#endif
+	vector<std::pair<std::string, Tensor>> params = snap.Read();
+	net.SetParamValues(params);
+
+#ifdef USE_CUDNN
+	auto dev = std::make_shared<CudaGPU>();
+	net.ToDevice(dev);
+	test_x.ToDevice(dev);
+	test_y.ToDevice(dev);
+	Tensor ttmp =  net.EvaluateOnBatchOutput(test_x, test_y);
+	Tensor tout = ttmp.ToHost();
+#else
+	Tensor tout =  net.EvaluateOnBatchOutput(test_x, test_y);
+#endif  // USE_CUDNN
+
+	float vals[10];
+	tout.GetValue(vals, 10);
+	float max = vals[0];
+	int max_pos = 0;
+	// LOG(INFO) << 0 << " " << vals[0];
+	for (int i = 1; i < 10; i++) {
+		if (max < vals[i]) {
+			max = vals[i];
+			max_pos = i;
+		}
+		// LOG(INFO) << i << " " << vals[i];
+	}
+#ifdef MY_FILE_READER
+	snap.Close();
+#endif
+	return max_pos;
+}
+
+const std::pair<Tensor, Tensor> ReadImagesFiles(vector<string> files) {
+	const size_t n = files.size();
+	Tensor images(Shape{n, 3, kImageDim, kImageDim});
+	Tensor labels(Shape{n}, kInt);
+
+	for (size_t i = 0; i < n; i++) {
+		std::ifstream data_file(files[i].c_str(), std::ios::in | std::ios::binary);
+		if (!data_file.is_open())
+			LOG(ERROR) << "Unable to open file " << files[i];
+		char buff[kImageSize];
+		float data[kImageSize-1];
+		data_file.read(buff, kImageSize);
+		int label_val = (int)buff[0];
+		labels.CopyDataFromHostPtr(&label_val, 1, i);
+		for (int i = 0; i < kImageSize - 1; i++)
+			data[i] = (float)((int)buff[i+1]);
+		// image.CopyDataFromHostPtr(data, sizeof(float) * (kImageSize - 1), 0);
+		images.CopyDataFromHostPtr(data, kImageSize - 1, (kImageSize - 1) * i);
+		data_file.close();
+	}
+	return std::make_pair(images, labels);
+}
+
+vector<int> EvalFromFiles(vector<string> files) {
 
 	Tensor test_x, test_y;
-	auto test = ReadImageFile(file);
+	auto test = ReadImagesFiles(files);
+	size_t nsamples = test.first.shape(0);
 	/*
-    size_t nsamples = test.first.shape(0);
     auto mtest = Reshape(test.first, Shape{nsamples, test.first.Size() / nsamples});
     const Tensor& mean = Average(mtest, 0);
     SubRow(mean, &mtest);
@@ -191,23 +290,41 @@ int Eval(string file) {
 	Tensor tout =  net.EvaluateOnBatchOutput(test_x, test_y);
 #endif  // USE_CUDNN
 
-	float vals[10];
-	tout.GetValue(vals, 10);
-	float max = vals[0];
-	int max_pos = 0;
-	LOG(INFO) << 0 << " " << vals[0];
-	for (int i = 1; i < 10; i++) {
-		if (max < vals[i]) {
-			max = vals[i];
-			max_pos = i;
+	int n = tout.shape(0) * tout.shape(1);
+	int m  = tout.shape(1);
+	vector<int> idx_predictions(m);
+	float vals[n];
+	tout.GetValue(vals, n);
+
+	for (int k = 0; k < tout.shape(0); k++) {
+		float max = vals[k*m];
+		int max_pos = 0;
+		for (int i = 1; i < 10; i++) {
+			if (max < vals[k*m + i]) {
+				max = vals[k*m + i];
+				max_pos = i;
+			}
 		}
-		LOG(INFO) << i << " " << vals[i];
+		idx_predictions.push_back(max_pos);
+		LOG(INFO) << "File " << k << " " << max_pos;
 	}
+
 #ifdef MY_FILE_READER
 	snap.Close();
 #endif
-	return max_pos;
+	return idx_predictions;
 }
+
+int EvalFromFile(string file) {
+	auto test = ReadImageFile(file);
+	return Eval(test);
+}
+
+int EvalFromBuffer(char* buff) {
+	auto test = ReadImageBuffer(buff);
+	return Eval(test);
+}
+
 }
 
 #ifdef LOCAL_MAIN
@@ -219,6 +336,13 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
+	if (argc > 2) {
+		vector<string> files;
+		for (int i = 1; i < argc; i++)
+			files.push_back(argv[i]);
+		singa::Eval(files);
+		return 0;
+	}
 	//  LOG(INFO) << "Start evaluation";
 	int idx = singa::Eval(argv[1]);
 	LOG(INFO) << "Label: " << idx;

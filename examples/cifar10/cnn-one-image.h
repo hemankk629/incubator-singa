@@ -11,8 +11,12 @@
 
 namespace singa {
 
-const string snapshot_name="mysnap";
+const string snapshot_name = "mysnap";
 
-int Eval(string file);
+int EvalFromFile(string file);
+
+int EvalFromBuffer(char* buff);
+
+vector<int> EvalFromFiles(vector<string> files);
 
 }
