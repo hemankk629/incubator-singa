@@ -28,5 +28,11 @@ cnn-hadoop-pipes: cnn-hadoop-pipes.cc cnn-one-image.cc
 split-dataset-images: split-dataset-images.c
 	gcc -Wall $^ -o $@
 
+lenet: lenet.cc
+	g++ -std=c++11 -Wall -I../../include -I../../build/include $^ -o $@ -L../../build/lib -L/usr/local/lib -lsinga -lprotobuf -lglog
+
+lenet-cuda: letnet.cc
+	g++ -std=c++11 -Wall -I../../include -I../../build/include -I/usr/local/cuda/include $^ -o $@ -L../../build/lib -L/usr/local/lib -lsinga -lprotobuf -lglog
+
 clean:
 	rm -f cnn cnn-cuda
