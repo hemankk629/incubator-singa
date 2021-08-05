@@ -29,6 +29,10 @@
 #ifdef MY_FILE_READER
 #include "file_reader.h"
 #endif
+#ifdef MY_MEM_READER
+#include "mem_reader.h"
+#include "objects.h"
+#endif
 namespace singa {
 // currently supports 'cudnn' and 'singacpp'
 #ifdef USE_CUDNN
@@ -140,6 +144,36 @@ FeedForwardNet CreateNet() {
   net.Add(GenDenseConf("ip", 10, 0.01, 250));
   return net;
 }
+
+#ifdef MY_MEM_READER
+vector<std::pair<std::string, Tensor>> LoadParams() {
+	std::unordered_set<std::string> param_names_;
+	std::unordered_map<std::string, Tensor> param_map_;
+	std::string key;
+	char* ptr;
+	size_t size; 
+
+	LOG(INFO) << "Load snapshot from memory.";
+
+	int param_size = &_binary_myfilesnap_bin_end - &_binary_myfilesnap_bin_start;
+	LOG(INFO) << "Size of parameters: " << param_size;
+
+	MemReader mem_reader((char*)&_binary_myfilesnap_bin_start, param_size);
+
+	return mem_reader.Read();
+
+	while (mem_reader.Read(&key, &ptr, &size)) {
+		CHECK(param_names_.count(key) == 0);
+		LOG(INFO) << "Read param: " << key;
+		param_names_.insert(key);		
+		param_map_[key].FromBytes((uint8_t *)ptr, size);
+	}
+	std::vector<std::pair<std::string, Tensor>> ret;
+	for (auto it = param_map_.begin(); it != param_map_.end(); ++it)
+		ret.push_back(*it);
+	return ret;
+}
+#endif
 
 void Train(int num_epoch, string data_dir) {
   Cifar10 data(data_dir);
@@ -256,10 +290,14 @@ void Eval(string data_dir) {
 #ifdef MY_FILE_READER
   FileReader snap;
   snap.OpenForRead("myfilesnap.bin");
+  vector<std::pair<std::string, Tensor>> params = snap.Read();
+#elif (defined MY_MEM_READER)
+  vector<std::pair<std::string, Tensor>> params = LoadParams();
 #else
   Snapshot snap("mysnap", Snapshot::kRead, 100);
-#endif
   vector<std::pair<std::string, Tensor>> params = snap.Read();
+#endif
+
   net.SetParamValues(params);
 
 #ifdef USE_CUDNN

@@ -1,6 +1,8 @@
 #!/bin/bash
 
-DST="build_posit"
+set -x
+
+DST="build_bare_posit"
 
 cd ../../
 rm -rf $DST
@@ -9,7 +11,8 @@ cd $DST
 
 cp ../tool/posit/Makefile .
 
-cp ../examples/cifar10/cnn-bare.cc .
+cp ../examples/cifar10/cnn-one-image-bare.cc .
+# cp ../examples/cifar10/cnn-bare.cc .
 cp ../examples/cifar10/mem_reader.h .
 cp ../examples/cifar10/mem_reader.cc .
 cp ../examples/cifar10/objects.h .

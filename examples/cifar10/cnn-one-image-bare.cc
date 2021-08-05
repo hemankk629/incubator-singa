@@ -1,12 +1,14 @@
-#include "cnn-one-image.h"
+#include <string>
 
-#ifdef MY_FILE_READER
-#include "file_reader.h"
-#endif
-#ifdef MY_MEM_READER
+#include "singa/model/feed_forward_net.h"
+#include "singa/model/optimizer.h"
+#include "singa/model/metric.h"
+#include "singa/utils/channel.h"
+#include "singa/utils/string.h"
+#include "singa/io/snapshot.h"
+
 #include "mem_reader.h"
 #include "objects.h"
-#endif
 
 namespace singa {
 // currently supports 'cudnn' and 'singacpp'
@@ -16,8 +18,20 @@ const std::string engine = "cudnn";
 const std::string engine = "singacpp";
 #endif  // USE_CUDNN
 
+static const size_t kImageSize = 32;
+static const size_t kImageVol = 3072;
+static const size_t kBatchSize = 1;
 static const size_t kImageDim = 32;
-static const size_t kImageSize = 32 * 32 * 3 + 1;
+
+static const float my_alpha = 5e-05;
+static const float my_beta = 0.75;
+static const float my_momentum = 0.9;
+static const float my_reg_coef = 0.004;
+
+static const float my_10_minus_2 = 0.01;
+static const float my_10_minus_3 = 0.001;
+static const float my_10_minus_4 = 0.0001;
+static const float my_10_minus_5 = 0.00001;
 
 LayerConf GenConvConf(string name, int nb_filter, int kernel, int stride,
 		int pad, float std) {
@@ -61,6 +75,7 @@ LayerConf GenReLUConf(string name) {
 	LayerConf conf;
 	conf.set_name(name);
 	conf.set_type(engine + "_relu");
+	ReLUConf *relu = conf.mutable_relu_conf();	
 	return conf;
 }
 
@@ -101,6 +116,7 @@ LayerConf GenFlattenConf(string name) {
 	LayerConf conf;
 	conf.set_name(name);
 	conf.set_type("singa_flatten");
+	FlattenConf *flat = conf.mutable_flatten_conf();
 	return conf;
 }
 
@@ -123,46 +139,47 @@ FeedForwardNet CreateNet() {
 	net.Add(GenDenseConf("ip", 10, 0.01, 250));
 	return net;
 }
-
-const std::pair<Tensor, Tensor> ReadImageBuffer(char* buff) {
-	Tensor image(Shape{1, 3, kImageDim, kImageDim});
-	Tensor label(Shape{1}, kInt);
-	float data[kImageSize-1];
-	int label_val = (int)buff[0];
-	label.CopyDataFromHostPtr(&label_val, 1, 0);
-	for (int i = 0; i < kImageSize - 1; i++)
-		data[i] = (float)((int)buff[i+1]);
-	image.CopyDataFromHostPtr(data, kImageSize - 1, 0);
-	return std::make_pair(image, label);
-}
-
-const std::pair<Tensor, Tensor> ReadImageFile(string file) {
+/* TODO remove
+const std::pair<Tensor, Tensor> ReadImageFile(string file) {	
 	Tensor image(Shape{1, 3, kImageDim, kImageDim});
 	Tensor label(Shape{1}, kInt);
 	std::ifstream data_file(file.c_str(), std::ios::in | std::ios::binary);
 	if (!data_file.is_open())
 		LOG(ERROR) << "Unable to open file " << file;
-	char buff[kImageSize];
-	float data[kImageSize-1];
-	data_file.read(buff, kImageSize);
+	LOG(INFO) << "Read image from file";
+	char buff[kImageVol + 1];
+	float data[kImageVol];
+	data_file.read(buff, kImageVol + 1);
 	int label_val = (int)buff[0];
 	label.CopyDataFromHostPtr(&label_val, 1, 0);
-	for (int i = 0; i < kImageSize - 1; i++)
+	for (int i = 0; i < kImageVol; i++)
 		data[i] = (float)((int)buff[i+1]);
-	image.CopyDataFromHostPtr(data, kImageSize - 1, 0);
+	image.CopyDataFromHostPtr(data, kImageVol, 0);
 	data_file.close();
 	return std::make_pair(image, label);
 }
+*/
 
-#ifdef MY_MEM_READER
+std::pair<Tensor, Tensor> LoadData() {
+	LOG(INFO) << "Load image from memory";
+	Tensor images(Shape{1, 3, kImageSize, kImageSize});
+	Tensor labels(Shape{1}, kInt);
+	char* ptr = (char*)(&_binary_images_bin_start);
+	float data[kImageVol];
+	for (int i = 0; i < kImageVol; i++)
+		data[i] = (float)((int)ptr[i+1]);
+	images.CopyDataFromHostPtr(data, kImageVol, 0);	
+	int lbl = (int)(*ptr);
+	labels.CopyDataFromHostPtr(&lbl, 1, 0);
+	return std::make_pair(images, labels);
+}
+
 vector<std::pair<std::string, Tensor>> LoadParams() {
 	std::unordered_set<std::string> param_names_;
 	std::unordered_map<std::string, Tensor> param_map_;
 	std::string key;
 	char* ptr;
 	size_t size; 
-
-	LOG(INFO) << "Load snapshot from memory.";
 
 	int param_size = &_binary_myfilesnap_bin_end - &_binary_myfilesnap_bin_start;
 	LOG(INFO) << "Size of parameters: " << param_size;
@@ -182,16 +199,17 @@ vector<std::pair<std::string, Tensor>> LoadParams() {
 		ret.push_back(*it);
 	return ret;
 }
-#endif
 
-int Eval(std::pair<Tensor, Tensor> test) {
+int Eval() {
 	Tensor test_x, test_y;
+	
+	auto test = LoadData();
+	// auto test = ReadImageFile("images.bin");
 	test_x = test.first;
-	test_y = test.second;
-
+	test_y = test.second;		
 	CHECK_EQ(test_x.shape(0), test_y.shape(0));
 	LOG(INFO) << "Test samples = " << test_y.shape(0);
-	auto net = CreateNet();
+
 	SGD sgd;
 	OptimizerConf opt_conf;
 	opt_conf.set_momentum(0.9);
@@ -207,32 +225,18 @@ int Eval(std::pair<Tensor, Tensor> test) {
 			return 0.00001;
 	});
 
+	LOG(INFO) << "Create net.";
 	SoftmaxCrossEntropy loss;
 	Accuracy acc;
+	auto net = CreateNet();
+	LOG(INFO) << "Compile net.";
 	net.Compile(true, &sgd, &loss, &acc);
 
-#ifdef MY_FILE_READER
-	FileReader snap;
-	snap.OpenForRead("myfilesnap.bin");
-	vector<std::pair<std::string, Tensor>> params = snap.Read();
-#elif (defined MY_MEM_READER)
-	vector<std::pair<std::string, Tensor>> params = LoadParams();
-#else
-	Snapshot snap(snapshot_name, Snapshot::kRead, 100);
-	vector<std::pair<std::string, Tensor>> params = snap.Read();
-#endif	
-	net.SetParamValues(params);
+	LOG(INFO) << "Done create net.";
 
-#ifdef USE_CUDNN
-	auto dev = std::make_shared<CudaGPU>();
-	net.ToDevice(dev);
-	test_x.ToDevice(dev);
-	test_y.ToDevice(dev);
-	Tensor ttmp =  net.EvaluateOnBatchOutput(test_x, test_y);
-	Tensor tout = ttmp.ToHost();
-#else
+	vector<std::pair<std::string, Tensor>> params = LoadParams();
+	net.SetParamValues(params);
 	Tensor tout =  net.EvaluateOnBatchOutput(test_x, test_y);
-#endif  // USE_CUDNN
 
 	float vals[10];
 	tout.GetValue(vals, 10);
@@ -246,147 +250,16 @@ int Eval(std::pair<Tensor, Tensor> test) {
 		}
 		LOG(INFO) << i << " " << vals[i];
 	}
-#ifdef MY_FILE_READER
-	snap.Close();
-#endif
 	return max_pos;
 }
 
-const std::pair<Tensor, Tensor> ReadImagesFiles(vector<string> files) {
-	const size_t n = files.size();
-	Tensor images(Shape{n, 3, kImageDim, kImageDim});
-	Tensor labels(Shape{n}, kInt);
+} // end singa
 
-	for (size_t i = 0; i < n; i++) {
-		std::ifstream data_file(files[i].c_str(), std::ios::in | std::ios::binary);
-		if (!data_file.is_open())
-			LOG(ERROR) << "Unable to open file " << files[i];
-		char buff[kImageSize];
-		float data[kImageSize-1];
-		data_file.read(buff, kImageSize);
-		int label_val = (int)buff[0];
-		labels.CopyDataFromHostPtr(&label_val, 1, i);
-		for (int i = 0; i < kImageSize - 1; i++)
-			data[i] = (float)((int)buff[i+1]);
-		// image.CopyDataFromHostPtr(data, sizeof(float) * (kImageSize - 1), 0);
-		images.CopyDataFromHostPtr(data, kImageSize - 1, (kImageSize - 1) * i);
-		data_file.close();
-	}
-	return std::make_pair(images, labels);
-}
-
-vector<int> EvalFromFiles(vector<string> files) {
-
-	Tensor test_x, test_y;
-	auto test = ReadImagesFiles(files);
-	size_t nsamples = test.first.shape(0);
-	/*
-    auto mtest = Reshape(test.first, Shape{nsamples, test.first.Size() / nsamples});
-    const Tensor& mean = Average(mtest, 0);
-    SubRow(mean, &mtest);
-    test_x = Reshape(mtest, test.first.shape());
-	 */
-	test_x = test.first;
-	test_y = test.second;
-
-	CHECK_EQ(test_x.shape(0), test_y.shape(0));
-	LOG(INFO) << "Test samples = " << test_y.shape(0);
-	auto net = CreateNet();
-	SGD sgd;
-	OptimizerConf opt_conf;
-	opt_conf.set_momentum(0.9);
-	auto reg = opt_conf.mutable_regularizer();
-	reg->set_coefficient(0.004);
-	sgd.Setup(opt_conf);
-	sgd.SetLearningRateGenerator([](int step) {
-		if (step <= 120)
-			return 0.001;
-		else if (step <= 130)
-			return 0.0001;
-		else
-			return 0.00001;
-	});
-
-	SoftmaxCrossEntropy loss;
-	Accuracy acc;
-	net.Compile(true, &sgd, &loss, &acc);
-
-#ifdef MY_FILE_READER
-	FileReader snap;
-	snap.OpenForRead("myfilesnap.bin");
-#else
-	Snapshot snap(snapshot_name, Snapshot::kRead, 100);
-#endif
-	vector<std::pair<std::string, Tensor>> params = snap.Read();
-	net.SetParamValues(params);
-
-#ifdef USE_CUDNN
-	auto dev = std::make_shared<CudaGPU>();
-	net.ToDevice(dev);
-	test_x.ToDevice(dev);
-	test_y.ToDevice(dev);
-	Tensor ttmp =  net.EvaluateOnBatchOutput(test_x, test_y);
-	Tensor tout = ttmp.ToHost();
-#else
-	Tensor tout =  net.EvaluateOnBatchOutput(test_x, test_y);
-#endif  // USE_CUDNN
-
-	int n = tout.shape(0) * tout.shape(1);
-	int m  = tout.shape(1);
-	vector<int> idx_predictions(m);
-	float vals[n];
-	tout.GetValue(vals, n);
-
-	for (int k = 0; k < tout.shape(0); k++) {
-		float max = vals[k*m];
-		int max_pos = 0;
-		for (int i = 1; i < 10; i++) {
-			if (max < vals[k*m + i]) {
-				max = vals[k*m + i];
-				max_pos = i;
-			}
-		}
-		idx_predictions.push_back(max_pos);
-		LOG(INFO) << "File " << k << " " << max_pos;
-	}
-
-#ifdef MY_FILE_READER
-	snap.Close();
-#endif
-	return idx_predictions;
-}
-
-int EvalFromFile(string file) {
-	auto test = ReadImageFile(file);
-	return Eval(test);
-}
-
-int EvalFromBuffer(char* buff) {
-	auto test = ReadImageBuffer(buff);
-	return Eval(test);
-}
-
-}
-
-#ifdef LOCAL_MAIN
 int main(int argc, char **argv) {
 	singa::InitChannel(nullptr);
 
-	if (argc < 2) {
-		LOG(INFO) << "Usage: " << argv[0] << " <image_bin>" << std::endl;
-		return -1;
-	}
-
-	if (argc > 2) {
-		vector<string> files;
-		for (int i = 1; i < argc; i++)
-			files.push_back(argv[i]);
-		singa::EvalFromFiles(files);
-		return 0;
-	}
-	//  LOG(INFO) << "Start evaluation";
-	int idx = singa::EvalFromFile(argv[1]);
+	int idx = singa::Eval();
 	LOG(INFO) << "Label: " << idx;
-	//  LOG(INFO) << "End evaluation";
+
+	return 0;
 }
-#endif // LOCAL_MAIN

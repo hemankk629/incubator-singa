@@ -32,7 +32,8 @@ extern unsigned char _binary_mysnap_bin_start;
 extern unsigned char _binary_mysnap_bin_end;
 extern unsigned char _binary_mysnap_bin_size;
 
-extern unsigned char _binary_myfilesnap_bin_end;
 extern unsigned char _binary_myfilesnap_bin_start;
+extern unsigned char _binary_myfilesnap_bin_end;
+extern unsigned char _binary_myfilesnap_bin_size;
 
 #endif
