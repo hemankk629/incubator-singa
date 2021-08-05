@@ -239,7 +239,6 @@ void Add<float, lang::Cpp>(const Tensor& in1, const Tensor& in2, Tensor* out, Co
     return (a + b);
   };
   traverse_binary<float>(in1, in2, out, add_lambda_binary);
-
 }
 
 template <>

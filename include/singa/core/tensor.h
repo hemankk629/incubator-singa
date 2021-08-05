@@ -27,6 +27,7 @@
 #include "singa/core/device.h"
 #ifndef LITE_POSIT
 #include "singa/proto/core.pb.h"
+#include "singa/core/posit.h"
 #endif
 #include "singa/utils/logging.h"
 
@@ -314,11 +315,9 @@ inline void CheckDataTypeAndLang(const Tensor &in1, const Tensor &in2) {
   CHECK_EQ(in1.device()->lang(), in2.device()->lang());
 }
 
-
 template <typename FromType, typename ToType>
 ToType TypeCast(const FromType &x) {
-  // TODO(wangwei) cast fp16; prevent some casts, e.g., float to char
-  return static_cast<ToType>(x);
+  return to_float(x);
 }
 
 Tensor Boradcast(const Shape& shape);

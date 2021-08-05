@@ -25,6 +25,7 @@
 #ifdef USE_OPENCL
 #include "./tensor_math_opencl.h"
 #endif
+#include "./tensor_math_posit_cpp.h"
 #include <utility>
 #include <algorithm>
 
@@ -693,6 +694,11 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t>& repeats, int ax
         { __VA_ARGS__ }                                             \
         break;                                                      \
       }                                                             \
+      case kPosit: {                                                \
+        typedef posit_t DType;                                       \
+        { __VA_ARGS__ }                                             \
+        break;                                                      \
+      }                                                             \
       default:                                                      \
         LOG(FATAL) << "Unknow data type = " << DataType_Name(type); \
     }                                                               \
@@ -725,6 +731,12 @@ void RepeatDataToFrom(bool broadcast_flag, const vector<size_t>& repeats, int ax
         { __VA_ARGS__ }                                        \
         break;                                                 \
       }                                                        \
+      case ((kPosit << _SwitchShift) + kCpp): {                \
+        typedef posit_t DType;                                 \
+        typedef lang::Cpp Lang;                                \
+        { __VA_ARGS__ }                                        \
+        break;                                                 \
+      }                                                        \
       default:                                                 \
         LOG(FATAL) << "Unknown combination of data type "      \
                    << DataType_Name(dtype) << " and language " \
@@ -740,6 +752,7 @@ float Tensor::L1() const {
       DType ret = DType(0);
       Asum<DType, Lang>(*this, &ret, ctx);
       nrm = TypeCast<DType, float>(ret);
+      // nrm = CAST_TO_FLOAT(data_type_, ret);
     }, {this->block()}, {});
   });
   return nrm / Size();
@@ -753,6 +766,7 @@ float Tensor::L2() const {
       DType ret = DType(0);
       Nrm2<DType, Lang>(*this, &ret, ctx);
       nrm = TypeCast<DType, float>(ret);
+      // nrm = CAST_TO_FLOAT(data_type_, ret);
     }, {this->block()}, {});
   });
   return nrm / Size();
@@ -853,16 +867,21 @@ GenBinaryTensorFn(operator<=, LE);
 GenBinaryTensorFn(operator>, GT);
 GenBinaryTensorFn(operator>=, GE);
 
+/*
 #define EltwiseTensorScalarFn(fn, t, x, ret)                            \
   do {                                                                  \
-    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {  \
-      static_assert(std::is_same<SType, DType>::value,                  \
-                    "The Scalar type must match the Tensor data type"); \
+    TYPE_LANG_SWITCH(t.data_type(), DType, t.device()->lang(), Lang, {  \      
       ret->device()->Exec([t, x, ret](Context * ctx) {                  \
         fn<DType, Lang>(t, x, ret, ctx);     \
       }, {t.block()}, {ret->block()});                                  \
     });                                                                 \
   } while (0)
+*/
+
+#define EltwiseTensorScalarFn(fn, t, x, ret)                            \
+  ret->device()->Exec([t, x, ret](Context * ctx) {                      \
+        fn<SType, lang::Cpp>(t, x, ret, ctx);                           \
+      }, {t.block()}, {ret->block()});                                                                                    
 
 #define GenTensorScalarFn(op, fn)                             \
   template <typename SType>                                   \
@@ -876,7 +895,9 @@ GenBinaryTensorFn(operator>=, GE);
     EltwiseTensorScalarFn(fn, in, x, ret);                    \
   }                                                           \
   template Tensor op <float>(const Tensor &in, const float x); \
-  template void fn<float>(const Tensor &in, const float x, Tensor *ret)
+  template void fn<float>(const Tensor &in, const float x, Tensor *ret); \
+  template Tensor op <posit_t>(const Tensor &in, const posit_t x); \
+  template void fn<posit_t>(const Tensor &in, const posit_t x, Tensor *ret); \
 
 GenTensorScalarFn(operator+, Add);
 GenTensorScalarFn(operator-, Sub);
@@ -887,6 +908,27 @@ GenTensorScalarFn(operator<, LT);
 GenTensorScalarFn(operator<=, LE);
 GenTensorScalarFn(operator>, GT);
 GenTensorScalarFn(operator>=, GE);
+
+
+template <typename SType>
+void Div(const SType alpha, const Tensor &in, Tensor *out) {
+  CheckDataTypeAndLang(in, *out);
+  CHECK(in.shape() == out->shape());
+  /*
+  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+    // TODO(wangwei) type cast SType to DType;
+    in.device()->Exec([alpha, in, out](Context * ctx) {
+      Div<DType, Lang>(alpha, in, out, ctx);
+    }, {in.block()}, {out->block()});
+  });
+  */
+ in.device()->Exec([alpha, in, out](Context * ctx) {
+      Div<SType, lang::Cpp>(alpha, in, out, ctx);
+    }, {in.block()}, {out->block()});
+}
+template void Div<float>(const float, const Tensor &, Tensor *);
+template void Div<posit_t>(const posit_t, const Tensor &, Tensor *);
+
 template <typename SType>
 Tensor Div(const SType alpha, const Tensor &in) {
   Tensor out(in.shape(), in.device(), in.data_type());
@@ -894,19 +936,7 @@ Tensor Div(const SType alpha, const Tensor &in) {
   return out;
 }
 template Tensor Div<float>(const float, const Tensor &);
-
-template <typename SType>
-void Div(const SType alpha, const Tensor &in, Tensor *out) {
-  CheckDataTypeAndLang(in, *out);
-  CHECK(in.shape() == out->shape());
-  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
-    // TODO(wangwei) type cast SType to DType;
-    in.device()->Exec([alpha, in, out](Context * ctx) {
-      Div<DType, Lang>(alpha, in, out, ctx);
-    }, {in.block()}, {out->block()});
-  });
-}
-template void Div<float>(const float, const Tensor &, Tensor *);
+template Tensor Div<posit_t>(const posit_t, const Tensor &);
 
 // =============Matrix operations============================================
 Tensor Average(const Tensor &M, int axis) {
@@ -936,13 +966,13 @@ float Sum<float>(const Tensor &in) {
   float s = const_float_zero;
   Tensor one(in.shape(), in.device(), in.data_type());
   one.SetValue(const_float_one);
-  TYPE_LANG_SWITCH(in.data_type(), DType, in.device()->lang(), Lang, {
+  // TYPE_LANG_SWITCH(in.data_type(), float, in.device()->lang(), Lang, {
     one.device()->Exec([in, one, &s](Context * ctx) {
-      DType ret = DType(0);
-      Dot<DType, Lang>(in, one, &ret, ctx);
+      float ret = const_float_zero;
+      Dot<float, lang::Cpp>(in, one, &ret, ctx);
       s = ret;
     }, {in.block(), one.block()}, {});
-  });
+  // });
   return s;
 }
 
@@ -1266,6 +1296,7 @@ void SumRows(const Tensor &M, Tensor *v) {
   }
 }
 // ====================Random operations=====================================
+/*
 template <typename SType>
 void Bernoulli(const SType p, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
@@ -1275,9 +1306,23 @@ void Bernoulli(const SType p, Tensor *out) {
     }, {}, {out->block()}, true);
   });
 }
+*/
 
-template void Bernoulli<float>(const float p, Tensor *out);
+template <>
+void Bernoulli(const float p, Tensor *out) {
+  out->device()->Exec([p, out](Context * ctx) {
+    Bernoulli<float, lang::Cpp>(p, out, ctx);
+  }, {}, {out->block()}, true);
+}
 
+template <>
+void Bernoulli(const posit_t p, Tensor *out) {
+  out->device()->Exec([p, out](Context * ctx) {
+    Bernoulli<posit_t, lang::Cpp>(p, out, ctx);
+  }, {}, {out->block()}, true);
+}
+
+/*
 template <typename SType>
 void Uniform(const SType low, const SType high, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
@@ -1288,9 +1333,24 @@ void Uniform(const SType low, const SType high, Tensor *out) {
     }, {}, {out->block()}, true);
   });
 }
+// template void Uniform<float>(const float low, const float high, Tensor *out);
+*/
 
-template void Uniform<float>(const float low, const float high, Tensor *out);
+template <>
+void Uniform(const float low, const float high, Tensor *out) {
+  out->device()->Exec([low, high, out](Context * ctx) {
+      Uniform<float, lang::Cpp>(low, high, out, ctx);
+    }, {}, {out->block()}, true);
+}
 
+template <>
+void Uniform(const posit_t low, const posit_t high, Tensor *out) {
+  out->device()->Exec([low, high, out](Context * ctx) {
+      Uniform(low, high, out, ctx);
+    }, {}, {out->block()}, true);
+}
+
+/*
 template <typename SType>
 void Gaussian(const SType mean, const SType std, Tensor *out) {
   TYPE_LANG_SWITCH(out->data_type(), DType, out->device()->lang(), Lang, {
@@ -1301,7 +1361,22 @@ void Gaussian(const SType mean, const SType std, Tensor *out) {
     }, {}, {out->block()}, true);
   });
 }
-template void Gaussian<float>(const float mean, const float std, Tensor *out);
+// template void Gaussian<float>(const float mean, const float std, Tensor *out);
+*/
+
+template <>
+void Gaussian(const float mean, const float std, Tensor *out) {
+  out->device()->Exec([mean, std, out](Context * ctx) {
+      Gaussian<float, lang::Cpp>(mean, std, out, ctx);
+    }, {}, {out->block()}, true);
+}
+
+template <>
+void Gaussian(const posit_t mean, const posit_t std, Tensor *out) {
+  out->device()->Exec([mean, std, out](Context * ctx) {
+      Gaussian(mean, std, out, ctx);
+    }, {}, {out->block()}, true);
+}
 
 // ================Blas operations============================================
 

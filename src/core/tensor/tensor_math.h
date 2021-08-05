@@ -120,7 +120,7 @@ void Div(const DType x, const Tensor &in, Tensor *out,
 template <typename DType, typename Lang>
 void Div(const Tensor &in, const DType x, Tensor *out,
          Context *ctx) {
-  CHECK_NE(x, 0.f);
+  CHECK_NE(x, DType(0));
   EltwiseMult<DType, Lang>(in, DType(1) / x, out, ctx);
 }
 
@@ -256,7 +256,7 @@ void Square(const Tensor &in, Tensor *out, Context *ctx) {
 template <typename DType, typename Lang>
 void Sub(const Tensor &in, const DType x, Tensor *out,
          Context *ctx) {
-  Add<DType, Lang>(in, -x, out, ctx);
+  LOG(FATAL) << "Sub Not Implemented";
 }
 
 /// out[i] = in1[i] - in2[i]
@@ -293,20 +293,20 @@ void Transform(const Tensor &in, Tensor *out, Context *ctx) {
 // Get the random generator from 'ctx'
 // If DType is not float, then convert the threshold to DType
 template <typename DType, typename Lang>
-void Bernoulli(const float p, Tensor *out, Context *ctx) {
+void Bernoulli(const DType p, Tensor *out, Context *ctx) {
   LOG(FATAL) << "Bernoulli Not Implemented";
 }
 // The random generator should be extracted from ctx.
 // If DType is not float, then convert the mean and std to DType
 template <typename DType, typename Lang>
-void Gaussian(const float mean, const float std, Tensor *out,
+void Gaussian(const DType mean, const float std, Tensor *out,
               Context *ctx) {
   LOG(FATAL) << "Gaussian Not Implemented";
 }
 // The random generator should be extracted from ctx.
 // If DType is not float, then convert the low and high to DType
 template <typename DType, typename Lang>
-void Uniform(const float low, const float high, Tensor *out,
+void Uniform(const DType low, const float high, Tensor *out,
              Context *ctx) {
   LOG(FATAL) << "Uniform Not Implemented";
 }
@@ -341,7 +341,7 @@ void Axpy(const DType alpha, const Tensor &in, Tensor *out,
 
 /// out = ||in||_2^2, i.e, L2 norm.
 template <typename DType, typename Lang>
-void Nrm2(const Tensor &in, float *out, Context *ctx) {
+void Nrm2(const Tensor &in, DType *out, Context *ctx) {
   LOG(FATAL) << "Nrm2 Not Implemented";
 }
 

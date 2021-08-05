@@ -2,6 +2,7 @@
 #define _KERNELS_H_
 
 #include "singa/core/common.h"
+#include "singa/core/posit.h"
 
 namespace singa {
 
@@ -47,10 +48,6 @@ void my_cblas_sscal(const int __N, const float __alpha, float *__X, const int __
  * https://developer.apple.com/documentation/accelerate/1513250-cblas_snrm2?language=objc
  */
 float my_cblas_snrm2(const int __N, const float *__X, const int __incX);
-
-enum MY_CBLAS_ORDER {MyCblasRowMajor=101, MyCblasColMajor=102 };
-
-enum MY_CBLAS_TRANSPOSE {MyCblasNoTrans=111, MyCblasTrans=112, MyCblasConjTrans=113, MyAtlasConj=114};
 
 /**
  * Multiplies a matrix by a vector (single precision).
