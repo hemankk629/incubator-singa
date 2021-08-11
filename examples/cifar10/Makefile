@@ -51,7 +51,7 @@ convert: convert.cc file_reader.cc
 lenet: lenet.cc
 	g++ -std=c++11 -Wall -I../../include -I../../build/include $^ -o $@ -L../../build/lib -L/usr/local/lib -lsinga -lprotobuf -lglog
 
-lenet-cuda: letnet.cc
+lenet-cuda: lenet.cc
 	g++ -std=c++11 -Wall -I../../include -I../../build/include -I/usr/local/cuda/include $^ -o $@ -L../../build/lib -L/usr/local/lib -lsinga -lprotobuf -lglog
 
 clean:
